@@ -1,0 +1,356 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block main %}
+
+<!-- Mobile Toggle for Sidebar -->
+<button class="mobile-toggle d-lg-none" id="mobileToggle">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Collapse Toggle -->
+<button class="sidebar-toggle d-none d-lg-block" id="sidebarToggle" title="Collapse sidebar">
+    <i class="bi bi-chevron-left"></i>
+</button>
+
+<div style="margin-left: 300px;">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container-fluid px-0 mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center border-0 shadow-sm" role="alert">
+            <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill text-success{% elif 'error' in message.tags %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle text-info{% endif %} me-2 fs-5"></i>
+            <div class="flex-grow-1">{{ message }}</div>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dashboard-content">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient-primary border-0 rounded-4 overflow-hidden">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <h3 class="text-white mb-2">Add New Subscription</h3>
+                                <p class="text-white opacity-8 mb-0">Track a new recurring payment or service</p>
+                            </div>
+                            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                <a href="{% url 'subscription_list' %}" class="btn btn-white mb-0">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to List
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Subscription Form -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="card-header bg-white py-3 border-bottom-0">
+                        <h5 class="mb-0 fw-semibold">Subscription Details</h5>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form method="post" enctype="multipart/form-data" id="subscriptionForm">
+                            {% csrf_token %}
+                            
+                            <div class="row g-4">
+                                <!-- Name -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control border-2" id="name" name="name" placeholder="Netflix" required>
+                                        <label for="name">
+                                            <i class="bi bi-tag me-1"></i>Subscription Name <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Plan Type -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select border-2" id="plan_type" name="plan_type" required>
+                                            <option value="monthly" selected>Monthly</option>
+                                            <option value="yearly">Yearly</option>
+                                        </select>
+                                        <label for="plan_type">
+                                            <i class="bi bi-calendar me-1"></i>Plan Type <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Price -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <div class="input-group border-2 rounded-3">
+                                            <span class="input-group-text bg-light border-0 fs-5">₹</span>
+                                            <input type="number" step="0.01" min="0" class="form-control border-0 bg-light" id="price" name="price" placeholder="999" required>
+                                        </div>
+                                        <label for="price" class="ms-4">
+                                            <i class="bi bi-currency-rupee me-1"></i>Price <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Status -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <div class="form-check form-switch mt-3">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                            <label class="form-check-label" for="is_active">Active Subscription</label>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">Uncheck if this subscription is paused or cancelled</small>
+                                    </div>
+                                </div>
+
+                                <!-- Logo Upload -->
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-2">
+                                        <i class="bi bi-image me-1"></i>Logo / Icon
+                                    </label>
+                                    <div class="file-upload-area border-2 rounded-3 p-4 text-center">
+                                        <input type="file" class="form-control d-none" id="logo" name="logo" accept="image/*" onchange="previewFile(this, 'logoPreview')">
+                                        
+                                        <div id="logoPreview" class="mb-3">
+                                            <i class="bi bi-cloud-arrow-up display-4 text-primary opacity-50"></i>
+                                        </div>
+                                        
+                                        <h6 class="mb-2">Upload Logo</h6>
+                                        <p class="text-muted small mb-3">PNG, JPG or GIF (Max 2MB)</p>
+                                        
+                                        <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="document.getElementById('logo').click()">
+                                            <i class="bi bi-upload me-2"></i>Choose File
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Bill Slip Upload -->
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small mb-2">
+                                        <i class="bi bi-receipt me-1"></i>Bill / Receipt
+                                    </label>
+                                    <div class="file-upload-area border-2 rounded-3 p-4 text-center">
+                                        <input type="file" class="form-control d-none" id="bill_slip" name="bill_slip" accept=".pdf,.jpg,.jpeg,.png" onchange="previewFile(this, 'billPreview')">
+                                        
+                                        <div id="billPreview" class="mb-3">
+                                            <i class="bi bi-file-earmark-text display-4 text-primary opacity-50"></i>
+                                        </div>
+                                        
+                                        <h6 class="mb-2">Upload Bill Slip</h6>
+                                        <p class="text-muted small mb-3">PDF, JPG or PNG (Max 5MB)</p>
+                                        
+                                        <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="document.getElementById('bill_slip').click()">
+                                            <i class="bi bi-upload me-2"></i>Choose File
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Price Suggestions -->
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-3 bg-light">
+                                        <h6 class="mb-3">
+                                            <i class="bi bi-lightning me-2 text-warning"></i>
+                                            Quick Price Suggestions
+                                        </h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('149')">₹149</button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('199')">₹199</button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('299')">₹299</button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('499')">₹499</button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('999')">₹999</button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('1499')">₹1,499</button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setPrice('2999')">₹2,999</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Popular Subscription Suggestions -->
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-3">
+                                        <h6 class="mb-3">
+                                            <i class="bi bi-stars me-2 text-warning"></i>
+                                            Popular Subscriptions
+                                        </h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setNameAndPrice('Netflix', '499', 'monthly')">
+                                                <i class="bi bi-film me-1"></i>Netflix
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setNameAndPrice('Spotify', '119', 'monthly')">
+                                                <i class="bi bi-music-note-beamed me-1"></i>Spotify
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setNameAndPrice('Amazon Prime', '1499', 'yearly')">
+                                                <i class="bi bi-amazon me-1"></i>Amazon Prime
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setNameAndPrice('Disney+ Hotstar', '899', 'yearly')">
+                                                <i class="bi bi-tv me-1"></i>Disney+ Hotstar
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="setNameAndPrice('YouTube Premium', '139', 'monthly')">
+                                                <i class="bi bi-youtube me-1"></i>YouTube Premium
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 d-flex gap-3">
+                                <button type="submit" class="btn btn-gradient-primary px-5 py-3 rounded-pill">
+                                    <i class="bi bi-check-lg me-2"></i>Save Subscription
+                                </button>
+                                <a href="{% url 'subscription_list' %}" class="btn btn-outline-secondary px-5 py-3 rounded-pill">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Style Section -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .btn-gradient-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .form-control.border-2, .form-select.border-2 {
+        border-width: 2px !important;
+        border-color: #e9ecef !important;
+        transition: all 0.3s ease;
+        border-radius: 12px !important;
+    }
+    .form-control.border-2:focus, .form-select.border-2:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    }
+
+    .file-upload-area {
+        border: 2px dashed #dee2e6;
+        background: rgba(102, 126, 234, 0.02);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .file-upload-area:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
+    }
+
+    .modal-content {
+        animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .btn-gradient-primary {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    // Set price from suggestion
+    function setPrice(price) {
+        document.getElementById('price').value = price;
+        document.getElementById('price').classList.add('bg-success', 'bg-opacity-10');
+        setTimeout(() => document.getElementById('price').classList.remove('bg-success', 'bg-opacity-10'), 300);
+    }
+
+    // Set name and price from suggestion
+    function setNameAndPrice(name, price, planType) {
+        document.getElementById('name').value = name;
+        document.getElementById('price').value = price;
+        document.getElementById('plan_type').value = planType;
+        
+        // Highlight the fields
+        document.getElementById('name').classList.add('bg-success', 'bg-opacity-10');
+        document.getElementById('price').classList.add('bg-success', 'bg-opacity-10');
+        document.getElementById('plan_type').classList.add('bg-success', 'bg-opacity-10');
+        
+        setTimeout(() => {
+            document.getElementById('name').classList.remove('bg-success', 'bg-opacity-10');
+            document.getElementById('price').classList.remove('bg-success', 'bg-opacity-10');
+            document.getElementById('plan_type').classList.remove('bg-success', 'bg-opacity-10');
+        }, 300);
+    }
+
+    // Preview uploaded file
+    function previewFile(input, previewId) {
+        const preview = document.getElementById(previewId);
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                if (input.accept.includes('image')) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="img-fluid rounded" style="max-height: 100px;">`;
+                } else {
+                    preview.innerHTML = `
+                        <i class="bi bi-file-check display-4 text-success"></i>
+                        <p class="small text-muted mt-2">${input.files[0].name}</p>
+                    `;
+                }
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+            
+            // Add visual feedback to upload area
+            const uploadArea = input.closest('.file-upload-area');
+            uploadArea.classList.add('border-success');
+        }
+    }
+
+    // Form validation
+    document.getElementById('subscriptionForm')?.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value;
+        const price = document.getElementById('price').value;
+        
+        if (!name.trim()) {
+            e.preventDefault();
+            alert('Please enter a subscription name');
+            return false;
+        }
+        
+        if (!price || parseFloat(price) <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid price');
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+        submitBtn.disabled = true;
+    });
+</script>
+
+{% endblock %}
