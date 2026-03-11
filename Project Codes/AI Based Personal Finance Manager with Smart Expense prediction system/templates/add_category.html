@@ -1,0 +1,223 @@
+{% extends 'dashboard.html' %}
+
+{% block main %}
+
+<!-- Mobile Toggle for Sidebar (for smaller screens) -->
+<button class="mobile-toggle d-lg-none" id="mobileToggle">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Collapse Toggle (for larger screens) -->
+<button class="sidebar-toggle d-none d-lg-block" id="sidebarToggle" title="Collapse sidebar">
+    <i class="bi bi-chevron-left"></i>
+</button>
+
+<div style="margin-left: 400px;">
+    <!-- Messages (success, error, warning) -->
+    {% if messages %}
+    <div class="container-fluid px-0 mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dashboard-content">
+        <!-- Page Header -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+            <div>
+                <h1 class="mb-1">Categories</h1>
+                <p class="text-muted mb-0">Organize your transactions with custom categories</p>
+            </div>
+            
+            <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="bi bi-plus-lg me-2"></i>
+                Add New Category
+            </button>
+        </div>
+
+        <!-- Categories Content -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0 d-flex align-items-center">
+                    <i class="bi bi-tags me-2 text-primary"></i>
+                    Your Expense Categories
+                </h5>
+            </div>
+
+            <div class="card-body p-0">
+                {% if get_categories %}
+                <!-- Has categories → show table -->
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Category Name</th>
+                                <th scope="col">Description</th>
+                                <!-- <th scope="col">Added On</th> -->
+                                <th scope="col" class="text-end" style="width: 140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in get_categories %}
+                            <tr>
+                                <td>
+                                    <strong>{{ category.category }}</strong>
+                                </td>
+                                <td>
+                                    {% if category.description %}
+                                        {{ category.description }}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">—</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-secondary" title="Edit" disabled>
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" title="Delete" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <!-- No categories → beautiful empty state -->
+                <div class="text-center py-5 my-5">
+                    <div class="mb-4">
+                        <i class="bi bi-tags display-1 text-primary opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">No categories yet</h4>
+                    <p class="text-muted mb-4" style="max-width: 460px; margin-left: auto; margin-right: auto;">
+                        Create categories like Food, Transport, Movies, Bills, Salary etc.<br>
+                        to better organize and understand your spending habits.
+                    </p>
+                    <button class="btn btn-primary btn-lg d-inline-flex align-items-center" 
+                            data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                        <i class="bi bi-plus-lg me-2"></i>
+                        Add Your First Category
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Optional: small help text -->
+        {% if get_categories %}
+        <div class="mt-4 text-center text-muted small">
+            <i class="bi bi-lightbulb me-1"></i>
+            Tip: Good categories are specific and mutually exclusive (e.g. "Groceries" instead of "Shopping")
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ──────────────────────────────────────────────── -->
+    <!--                  ADD CATEGORY MODAL               -->
+    <!-- ──────────────────────────────────────────────── -->
+
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCategoryModalLabel">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Category
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form method="post" action="{% url 'add_category' %}">
+                    {% csrf_token %}
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label required">
+                                Category Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="id_category" 
+                                   name="category" 
+                                   placeholder="e.g. Food, Transport, Entertainment, Salary"
+                                   maxlength="50"
+                                   required
+                                   autofocus>
+                            <div class="form-text text-muted">
+                                Keep it short and clear (max 50 characters)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description (optional)</label>
+                            <textarea class="form-control" 
+                                      id="id_description" 
+                                      name="description" 
+                                      rows="3" 
+                                      placeholder="e.g. All dining out, groceries, coffee, restaurants..."
+                                      maxlength="100"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i>
+                            Add Category
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mobile toggle functionality (for smaller screens)
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    mobileToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('active');  // Toggle sidebar visibility for mobile
+    });
+
+    // Sidebar collapse toggle functionality (for larger screens)
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const body = document.body;
+    
+    sidebarToggle.addEventListener('click', function() {
+        body.classList.toggle('sidebar-collapsed');
+        
+        // Change the icon based on sidebar collapse state
+        const icon = this.querySelector('i');
+        if (body.classList.contains('sidebar-collapsed')) {
+            icon.classList.remove('bi-chevron-left');
+            icon.classList.add('bi-chevron-right');
+        } else {
+            icon.classList.remove('bi-chevron-right');
+            icon.classList.add('bi-chevron-left');
+        }
+    });
+
+    // Close sidebar when clicking outside (for mobile)
+    document.addEventListener('click', function(e) {
+        if (window.innerWidth < 992 && 
+            !sidebar.contains(e.target) && 
+            !mobileToggle.contains(e.target) &&
+            sidebar.classList.contains('active')) {
+            sidebar.classList.remove('active');
+        }
+    });
+</script>
+
+{% endblock %}
