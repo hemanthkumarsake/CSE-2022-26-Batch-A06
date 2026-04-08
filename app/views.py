@@ -25,6 +25,8 @@ from django.conf import settings
 import joblib
 import pandas as pd
 import numpy as np
+import gdown
+from django.conf import settings
 
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -36,10 +38,7 @@ from .utils import *
 
 GEMINI_API_KEY = 'your_gemini_api_key_here'
 
-# Create your views here.
 
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'xgboost_model.pkl')
-gradient_boosting_model = joblib.load(MODEL_PATH)
 import os
 import joblib
 import numpy as np
@@ -52,9 +51,15 @@ from django.db.models import Sum
 
 # CORRECT MODELS FROM YOUR models.py
 from app.models import Addexpenses, monthly_salary
-
-# Load the trained ML model once when the server starts
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'xgboost_model.pkl')
+
+# Download model if not exists
+if not os.path.exists(MODEL_PATH):
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    url = "https://drive.google.com/uc?id=1vLjCplSPQibpFKYXf2MnRVs_f-55th3C"
+    gdown.download(url, MODEL_PATH, quiet=False)
+
+# Load model
 gradient_boosting_model = joblib.load(MODEL_PATH)
 
 @login_required
