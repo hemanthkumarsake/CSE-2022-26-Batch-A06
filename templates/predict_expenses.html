@@ -1,0 +1,309 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block main %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Prediction | Smart Budget Tracker</title>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #1f2937;
+            --light-bg: #f9fafb;
+        }
+
+        .prediction-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-header {
+            background: var(--primary-gradient);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .current-month-badge {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            display: inline-block;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .prediction-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 1.25rem 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .predict-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .predict-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.4);
+        }
+
+        .predict-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        .predict-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .result-card.expenses {
+            border-left: 4px solid #ef4444;
+        }
+
+        .result-card.savings {
+            border-left: 4px solid #10b981;
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+        }
+
+        .result-card.expenses .result-value {
+            color: #ef4444;
+        }
+
+        .result-card.savings .result-value {
+            color: #10b981;
+        }
+
+        .result-subtext {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .currency-symbol {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .prediction-card, .result-card {
+            animation: fadeInUp 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="prediction-container" style="margin-left: 300px;">
+        <div class="page-header">
+            <h1>💰 Expense Prediction & Savings Calculator</h1>
+            <p>Plan your finances smartly with AI-powered predictions</p>
+            <div class="current-month-badge">
+                📅 Current Month: {{ current_month }} {{ current_year }}
+            </div>
+        </div>
+
+        <div class="prediction-card">
+            <div class="card-header">
+                <h3>📊 Automatic AI Analysis</h3>
+            </div>
+            
+            <div style="padding: 2.5rem 1.5rem; text-align: center;">
+                <p style="color: #4b5563; font-size: 1.1rem; margin-bottom: 2rem;">
+                    Our AI model will automatically gather your logged expenses from the database, analyze your spending patterns, and predict your financial outlook for next month.
+                </p>
+                
+                <button id="predictBtn" onclick="fetchPrediction()" class="predict-btn" style="max-width: 400px; margin: 0 auto; display: block;">
+                    🔮 Analyze Database & Predict
+                </button>
+            </div>
+        </div>
+
+        <div id="resultsContainer" style="display: none;">
+            <div class="results-section">
+                <div class="result-card expenses">
+                    <div class="result-label">Predicted Expenses</div>
+                    <div class="result-value">
+                        <span class="currency-symbol">₹</span><span id="display-expenses">0.00</span>
+                    </div>
+                    <div class="result-subtext">
+                        For the upcoming month
+                    </div>
+                </div>
+                
+                <div class="result-card savings">
+                    <div class="result-label">Predicted Savings</div>
+                    <div class="result-value">
+                        <span class="currency-symbol">₹</span><span id="display-savings">0.00</span>
+                    </div>
+                    <div class="result-subtext">
+                        Based on your spending habits
+                    </div>
+                </div>
+            </div>
+            
+            <div class="prediction-card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
+                <div class="card-header" style="background: rgba(0,0,0,0.05);">
+                    <h3>💡 Financial Insight</h3>
+                </div>
+                <div id="insight-container" style="padding: 1.5rem;">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function fetchPrediction() {
+        const btn = document.getElementById('predictBtn');
+        btn.innerHTML = "⏳ Analyzing Database...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById('display-expenses').innerText = data.predicted_expense.toFixed(2);
+                document.getElementById('display-savings').innerText = data.predicted_savings.toFixed(2);
+                
+                const insightContainer = document.getElementById('insight-container');
+                if (data.predicted_savings > 0) {
+                    insightContainer.innerHTML = `<p style="margin: 0; font-size: 1rem;">✅ Great! You're on track to save <strong>₹${data.predicted_savings.toFixed(2)}</strong> next month. Consider investing this amount for better returns.</p>`;
+                } else {
+                    insightContainer.innerHTML = `<p style="margin: 0; font-size: 1rem;">⚠️ Your predicted expenses exceed your salary. Review your budget to reduce unnecessary expenses and increase your savings.</p>`;
+                }
+
+                document.getElementById('resultsContainer').style.display = 'block';
+                btn.innerHTML = "✅ Analysis Complete";
+                
+                // Optional: Scroll to results
+                document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert(data.error || "Failed to process prediction.");
+                btn.innerHTML = "🔮 Analyze Database & Predict";
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Connection error. Please try again.");
+            btn.innerHTML = "🔮 Analyze Database & Predict";
+            btn.disabled = false;
+        }
+    }
+    </script>
+</body>
+</html>
+
+{% endblock %}

@@ -1,0 +1,480 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block main %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --family-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Family Member Cards */
+.family-member-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.family-member-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: #667eea;
+}
+.family-member-card.active {
+    background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+    border-color: #667eea;
+    border-width: 2px;
+}
+.member-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: var(--family-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+.member-avatar.self {
+    background: var(--primary-gradient);
+}
+.member-stats {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.member-amount {
+    font-weight: bold;
+    color: #dc3545;
+}
+
+/* Summary Cards */
+.summary-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: white;
+    margin-bottom: 1rem;
+}
+.summary-card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+.summary-card small {
+    opacity: 0.8;
+}
+
+/* Expense Table Styling */
+.expense-table {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+}
+.expense-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+.expense-table tbody tr:hover {
+    background: rgba(102,126,234,0.05);
+    cursor: pointer;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 2rem;
+}
+</style>
+
+<div class="dashboard-content" style="margin-left: 300px; padding: 1.5rem;">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold">
+                        <i class="bi bi-people-fill text-primary me-2"></i>
+                        Family Expenses
+                    </h1>
+                    <p class="text-muted">Track and manage expenses for your entire family</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        <i class="bi bi-person-check me-1"></i>
+                        {{ family_members_count }} Family Members
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Family Members Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3">
+                <i class="bi bi-people me-2 text-primary"></i>
+                Family Members
+            </h5>
+            <div class="row">
+                {% for member in family_list %}
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="family-member-card {% if current_member == member.id|stringformat:'s' %}active{% endif %}" 
+                         onclick="filterByMember('{{ member.id }}')">
+                        <div class="d-flex align-items-center">
+                            <div class="member-avatar {% if member.relation == 'Self' %}self{% endif %} me-3">
+                                {{ member.name|slice:":2"|upper }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fw-bold">{{ member.name }}</h6>
+                                <small class="text-muted">{{ member.relation }}</small>
+                            </div>
+                            {% if member.relation != 'Self' %}
+                            <i class="bi bi-star-fill text-warning"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="summary-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small>Total Family Expenses</small>
+                        <h3>₹{{ total_expenses|floatformat:0 }}</h3>
+                    </div>
+                    <i class="bi bi-calculator-fill fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="summary-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small>Total Transactions</small>
+                        <h3>{{ expenses.count }}</h3>
+                    </div>
+                    <i class="bi bi-receipt fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="summary-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small>Average per Member</small>
+                        <h3>₹{{ total_expenses|floatformat:0|divisibleby:family_members_count|floatformat:0 }}</h3>
+                    </div>
+                    <i class="bi bi-person-check-fill fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <h6 class="mb-3">
+            <i class="bi bi-funnel me-2"></i>
+            Filter Expenses
+        </h6>
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Time Range</label>
+                <select name="time_range" class="form-select" onchange="this.form.submit()">
+                    <option value="7" {% if current_time_range == '7' %}selected{% endif %}>Last 7 days</option>
+                    <option value="30" {% if current_time_range == '30' %}selected{% endif %}>Last 30 days</option>
+                    <option value="90" {% if current_time_range == '90' %}selected{% endif %}>Last 90 days</option>
+                    <option value="month" {% if current_time_range == 'month' %}selected{% endif %}>This Month</option>
+                    <option value="year" {% if current_time_range == 'year' %}selected{% endif %}>This Year</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for cat in all_categories %}
+                    <option value="{{ cat }}" {% if current_category == cat %}selected{% endif %}>
+                        {{ cat }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Member</label>
+                <select name="member" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Members</option>
+                    {% for member in family_list %}
+                    <option value="{{ member.id }}" {% if current_member == member.id|stringformat:'s' %}selected{% endif %}>
+                        {{ member.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <a href="{% url 'family_expenses' %}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-arrow-repeat me-2"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-3">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h6 class="mb-0">Daily Spending Trend</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="dailyExpenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h6 class="mb-0">Category Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Member Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4">
+                    <h6 class="mb-0">Expenses by Member</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="memberChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-4 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-list-ul me-2"></i>
+                Transaction History
+            </h6>
+            <span class="badge bg-secondary">{{ expenses.count }} transactions</span>
+        </div>
+        <div class="card-body p-0">
+            {% if expenses %}
+            <div class="table-responsive">
+                <table class="table expense-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Member</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th class="text-end">Amount</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in expenses %}
+                        <tr>
+                            <td>
+                                <small>{{ expense.time_stamp|date:"d M Y" }}</small><br>
+                                <small class="text-muted">{{ expense.time_stamp|time:"h:i A" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    {{ expense.user.username }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info bg-opacity-10 text-info">
+                                    {{ expense.category_name|default:"Uncategorized" }}
+                                </span>
+                            </td>
+                            <td>{{ expense.Buyed_Items|truncatewords:10|default:"-" }}</td>
+                            <td class="text-end text-danger fw-bold">₹{{ expense.spending_amount|floatformat:2 }}</td>
+                            <td>
+                                {% if expense.bill %}
+                                <a href="{{ expense.bill.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted opacity-25"></i>
+                <h5 class="text-muted mt-3">No expenses found</h5>
+                <p class="text-muted">No expenses recorded for the selected filters</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Daily Expense Chart
+const dailyCtx = document.getElementById('dailyExpenseChart').getContext('2d');
+new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+        labels: {{ daily_labels|safe }},
+        datasets: [{
+            label: 'Daily Expenses',
+            data: {{ daily_data|safe }},
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102,126,234,0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return '₹' + context.raw.toFixed(2);
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₹' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Category Distribution Chart
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ category_labels|safe }},
+        datasets: [{
+            data: {{ category_data|safe }},
+            backgroundColor: ['#667eea', '#f093fb', '#f5576c', '#11998e', '#38ef7d', '#ffa62e', '#4a90e2'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { boxWidth: 12, padding: 15 }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let total = context.dataset.data.reduce((a,b) => a + b, 0);
+                        let percentage = ((context.raw / total) * 100).toFixed(1);
+                        return `${context.label}: ₹${context.raw.toFixed(2)} (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Member Breakdown Chart
+const memberCtx = document.getElementById('memberChart').getContext('2d');
+new Chart(memberCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ member_names|safe }},
+        datasets: [{
+            label: 'Total Expenses',
+            data: {{ member_totals|safe }},
+            backgroundColor: 'rgba(102,126,234,0.7)',
+            borderColor: '#667eea',
+            borderWidth: 1,
+            borderRadius: 8,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return '₹' + context.raw.toFixed(2);
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₹' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Filter function
+function filterByMember(memberId) {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('member', memberId);
+    window.location.href = currentUrl.toString();
+}
+</script>
+{% endblock %}
