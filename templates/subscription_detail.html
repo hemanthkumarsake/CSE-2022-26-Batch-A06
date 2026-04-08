@@ -1,0 +1,370 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block main %}
+
+<!-- Mobile Toggle for Sidebar -->
+<button class="mobile-toggle d-lg-none" id="mobileToggle">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Collapse Toggle -->
+<button class="sidebar-toggle d-none d-lg-block" id="sidebarToggle" title="Collapse sidebar">
+    <i class="bi bi-chevron-left"></i>
+</button>
+
+<div style="margin-left: 300px;">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container-fluid px-0 mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center border-0 shadow-sm" role="alert">
+            <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill text-success{% elif 'error' in message.tags %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle text-info{% endif %} me-2 fs-5"></i>
+            <div class="flex-grow-1">{{ message }}</div>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dashboard-content">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient-info border-0 rounded-4 overflow-hidden">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <div class="d-flex align-items-center">
+                                    {% if subscription.logo %}
+                                    <img src="{{ subscription.logo.url }}" alt="{{ subscription.name }}" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover; border: 3px solid rgba(255,255,255,0.3);">
+                                    {% else %}
+                                    <div class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                        <i class="bi bi-box fs-1 text-white"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h3 class="text-white mb-1">{{ subscription.name }}</h3>
+                                        <p class="text-white opacity-8 mb-0">
+                                            <i class="bi {% if subscription.plan_type == 'monthly' %}bi-calendar-month{% else %}bi-calendar-year{% endif %} me-1"></i>
+                                            {{ subscription.get_plan_type_display }} Plan
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                <a href="{% url 'subscription_list' %}" class="btn btn-white mb-0">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to List
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                                    <i class="bi bi-currency-rupee fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Price</h6>
+                                <h4 class="mb-0 fw-bold">₹{{ subscription.price|floatformat:2 }}</h4>
+                                <small class="text-muted">per {{ subscription.plan_type }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-success bg-opacity-10 text-success rounded-3 p-3">
+                                    <i class="bi bi-calendar-check fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Monthly Cost</h6>
+                                <h4 class="mb-0 fw-bold">₹{{ monthly_cost|floatformat:2 }}</h4>
+                                <small class="text-muted">Equivalent</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                                    <i class="bi bi-calendar-week fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Next Billing</h6>
+                                <h4 class="mb-0 fw-bold">{{ next_billing|date:"d M" }}</h4>
+                                <small class="text-muted">in {{ days_until }} days</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-info bg-opacity-10 text-info rounded-3 p-3">
+                                    <i class="bi bi-clock-history fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Created</h6>
+                                <h4 class="mb-0 fw-bold">{{ created_date|date:"d M Y" }}</h4>
+                                <small class="text-muted">{{ days_since_created }} days ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Details Card -->
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-lg rounded-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom-0">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-wrapper bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-3">
+                                <i class="bi bi-info-circle fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-semibold">Subscription Information</h5>
+                            </div>
+                        </div>
+                        <span class="badge {% if subscription.is_active %}bg-success{% else %}bg-secondary{% endif %} px-4 py-2 rounded-pill">
+                            <i class="bi {% if subscription.is_active %}bi-check-circle{% else %}bi-x-circle{% endif %} me-1"></i>
+                            {% if subscription.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="border rounded-3 p-3">
+                                    <small class="text-muted d-block mb-2">Plan Details</small>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Plan Type:</span>
+                                        <strong class="{% if subscription.plan_type == 'monthly' %}text-info{% else %}text-primary{% endif %}">
+                                            {{ subscription.get_plan_type_display }}
+                                        </strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Price:</span>
+                                        <strong class="text-primary">₹{{ subscription.price|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Auto-renewal:</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success">Enabled</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="border rounded-3 p-3">
+                                    <small class="text-muted d-block mb-2">Billing Schedule</small>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Started:</span>
+                                        <strong>{{ created_date|date:"d M Y" }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Next Billing:</span>
+                                        <strong class="{% if days_until < 7 %}text-warning{% endif %}">
+                                            {{ next_billing|date:"d M Y" }}
+                                        </strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Days until:</span>
+                                        <strong>{{ days_until }} days</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Cost Analysis - FIXED: Removed the div filter -->
+                            <div class="col-12">
+                                <div class="border rounded-3 p-3 bg-light">
+                                    <small class="text-muted d-block mb-3">Cost Analysis</small>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="text-center">
+                                                <span class="d-block text-muted small">Daily</span>
+                                                <strong class="fs-5">₹{% widthratio monthly_cost 30 1 %}</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center border-start border-end">
+                                                <span class="d-block text-muted small">Monthly</span>
+                                                <strong class="fs-5">₹{{ monthly_cost|floatformat:2 }}</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-center">
+                                                <span class="d-block text-muted small">Yearly</span>
+                                                <strong class="fs-5">₹{{ yearly_cost|floatformat:2 }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bill Slip -->
+                            {% if subscription.bill_slip %}
+                            <div class="col-12">
+                                <div class="border rounded-3 p-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-earmark-text fs-2 text-primary me-3"></i>
+                                            <div>
+                                                <h6 class="mb-1">Latest Bill Slip</h6>
+                                                <small class="text-muted">{{ subscription.bill_slip.name|slice:"25:" }}</small>
+                                            </div>
+                                        </div>
+                                        <a href="{{ subscription.bill_slip.url }}" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
+                                            <i class="bi bi-eye me-2"></i>View
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-white border-top-0 py-3">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'edit_subscription' subscription.id %}" class="btn btn-warning rounded-pill px-4">
+                                <i class="bi bi-pencil-square me-2"></i>Edit
+                            </a>
+                            <form method="post" action="{% url 'toggle_subscription' subscription.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-info rounded-pill px-4 {% if subscription.is_active %}text-white{% endif %}">
+                                    <i class="bi {% if subscription.is_active %}bi-pause{% else %}bi-play{% endif %} me-2"></i>
+                                    {% if subscription.is_active %}Pause{% else %}Activate{% endif %}
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'delete_subscription' subscription.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger rounded-pill px-4" onclick="return confirm('Are you sure you want to delete {{ subscription.name }}?')">
+                                    <i class="bi bi-trash me-2"></i>Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar Info -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-lg rounded-4">
+                    <div class="card-header bg-white py-3 border-bottom-0">
+                        <h5 class="mb-0 fw-semibold">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            <a href="{% url 'edit_subscription' subscription.id %}" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                                <i class="bi bi-pencil-square text-warning me-3 fs-5"></i>
+                                <div>
+                                    <strong>Edit Subscription</strong>
+                                    <small class="d-block text-muted">Update details or price</small>
+                                </div>
+                            </a>
+                            <form method="post" action="{% url 'toggle_subscription' subscription.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="list-group-item list-group-item-action d-flex align-items-center py-3 w-100 border-0 bg-transparent">
+                                    <i class="bi {% if subscription.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %} text-info me-3 fs-5"></i>
+                                    <div class="text-start">
+                                        <strong>{% if subscription.is_active %}Pause{% else %}Activate{% endif %} Subscription</strong>
+                                        <small class="d-block text-muted">{% if subscription.is_active %}Temporarily pause{% else %}Reactivate{% endif %} this subscription</small>
+                                    </div>
+                                </button>
+                            </form>
+                            <a href="#" class="list-group-item list-group-item-action d-flex align-items-center py-3" onclick="window.print()">
+                                <i class="bi bi-printer text-secondary me-3 fs-5"></i>
+                                <div>
+                                    <strong>Print Details</strong>
+                                    <small class="d-block text-muted">Save or print this page</small>
+                                </div>
+                            </a>
+                            <form method="post" action="{% url 'delete_subscription' subscription.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="list-group-item list-group-item-action d-flex align-items-center py-3 w-100 border-0 bg-transparent" onclick="return confirm('Are you sure you want to delete {{ subscription.name }}?')">
+                                    <i class="bi bi-trash text-danger me-3 fs-5"></i>
+                                    <div class="text-start">
+                                        <strong class="text-danger">Delete Subscription</strong>
+                                        <small class="d-block text-muted">Permanently remove this subscription</small>
+                                    </div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Style Section -->
+<style>
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+    }
+
+    .stat-card {
+        transition: all 0.3s ease;
+        border-radius: 16px !important;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    }
+
+    .icon-wrapper {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .icon-wrapper:hover {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .bg-opacity-10 {
+        --bg-opacity: 0.1;
+    }
+
+    @media (max-width: 768px) {
+        .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        .card-footer .d-flex {
+            flex-direction: column;
+        }
+    }
+</style>
+
+{% endblock %}
