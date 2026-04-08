@@ -1,4 +1,7 @@
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 import os
 
 # 1. Configuration - Replace 'YOUR_API_KEY' with your actual key
