@@ -243,66 +243,85 @@
     </div>
 
     <script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-        return cookieValue;
     }
+    return cookieValue;
+}
 
-    async function fetchPrediction() {
-        const btn = document.getElementById('predictBtn');
-        btn.innerHTML = "⏳ Analyzing Database...";
-        btn.disabled = true;
+async function fetchPrediction() {
+    const btn = document.getElementById('predictBtn');
+    btn.innerHTML = "⏳ Analyzing Database...";
+    btn.disabled = true;
 
-        try {
-            const response = await fetch(window.location.href, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                document.getElementById('display-expenses').innerText = data.predicted_expense.toFixed(2);
-                document.getElementById('display-savings').innerText = data.predicted_savings.toFixed(2);
-                
-                const insightContainer = document.getElementById('insight-container');
-                if (data.predicted_savings > 0) {
-                    insightContainer.innerHTML = `<p style="margin: 0; font-size: 1rem;">✅ Great! You're on track to save <strong>₹${data.predicted_savings.toFixed(2)}</strong> next month. Consider investing this amount for better returns.</p>`;
-                } else {
-                    insightContainer.innerHTML = `<p style="margin: 0; font-size: 1rem;">⚠️ Your predicted expenses exceed your salary. Review your budget to reduce unnecessary expenses and increase your savings.</p>`;
-                }
-
-                document.getElementById('resultsContainer').style.display = 'block';
-                btn.innerHTML = "✅ Analysis Complete";
-                
-                // Optional: Scroll to results
-                document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
-            } else {
-                alert(data.error || "Failed to process prediction.");
-                btn.innerHTML = "🔮 Analyze Database & Predict";
-                btn.disabled = false;
+    try {
+        const response = await fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
             }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Connection error. Please try again.");
+        });
+
+        const data = await response.json();
+
+        // 🔴 HANDLE MODEL ERROR (IMPORTANT)
+        if (data.error) {
+            alert(data.error);
             btn.innerHTML = "🔮 Analyze Database & Predict";
             btn.disabled = false;
+            return;
         }
+
+        // ✅ SHOW VALUES
+        document.getElementById('display-expenses').innerText = data.predicted_expense.toFixed(2);
+        document.getElementById('display-savings').innerText = data.predicted_savings.toFixed(2);
+
+        // 🔥 SMART AI INSIGHT (UPGRADED)
+        const insightContainer = document.getElementById('insight-container');
+
+        let message = "";
+        let color = "";
+
+        if (data.predicted_savings < 0) {
+            message = `⚠️ You may overspend next month. Reduce unnecessary expenses immediately.`;
+            color = "#ef4444";
+        } else if (data.predicted_savings < (data.predicted_expense * 0.2)) {
+            message = `⚠️ Your savings are quite low. Try to optimize your spending habits.`;
+            color = "#f59e0b";
+        } else {
+            message = `✅ Excellent! You are managing your finances well. Keep it up!`;
+            color = "#10b981";
+        }
+
+        insightContainer.innerHTML = `
+            <p style="margin: 0; font-size: 1rem; color:${color}; font-weight:600;">
+                ${message}
+            </p>
+        `;
+
+        document.getElementById('resultsContainer').style.display = 'block';
+        btn.innerHTML = "✅ Analysis Complete";
+
+        document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Connection error. Please try again.");
+        btn.innerHTML = "🔮 Analyze Database & Predict";
+        btn.disabled = false;
     }
-    </script>
+}
+</script>
 </body>
 </html>
 
