@@ -46,7 +46,7 @@ class Addexpenses(models.Model):
     time_stamp = models.DateTimeField(auto_now_add=True)
     spending_amount = models.FloatField(null=True)
     Buyed_Items = models.TextField(null=True)
-    bill = models.FileField(upload_to=os.path.join('static', 'Bills'))
+    bill = models.FileField(upload_to='Bills/', null=True, blank=True)
     is_anomaly = models.BooleanField(default=False)
 
     class Meta:

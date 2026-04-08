@@ -1,7 +1,10 @@
 from django.urls import path
 from .views import *
 from . import views
+from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from django.conf import settings
+
 
 urlpatterns = [
     
@@ -48,4 +51,5 @@ path('savings_goals/', views.savings_goals, name='savings_goals'),
     path('add-income/', views.add_income, name='add_income'),
     
 ]
-    
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
