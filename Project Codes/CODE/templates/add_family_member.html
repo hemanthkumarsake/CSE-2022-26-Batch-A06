@@ -1,0 +1,413 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block main %}
+
+<!-- Mobile Toggle for Sidebar -->
+<button class="mobile-toggle d-lg-none" id="mobileToggle">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Collapse Toggle -->
+<button class="sidebar-toggle d-none d-lg-block" id="sidebarToggle" title="Collapse sidebar">
+    <i class="bi bi-chevron-left"></i>
+</button>
+
+<div style="margin-left: 300px;">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container-fluid px-0 mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center border-0 shadow-sm" role="alert">
+            <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill text-success{% elif 'error' in message.tags %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle text-info{% endif %} me-2 fs-5"></i>
+            <div class="flex-grow-1">{{ message }}</div>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dashboard-content">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient-primary border-0 rounded-4 overflow-hidden">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <h3 class="text-white mb-2">Add Family Member</h3>
+                                <p class="text-white opacity-8 mb-0">Create login credentials for your family member to manage finances together</p>
+                            </div>
+                            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                <a href="{% url 'family_members_list' %}" class="btn btn-white mb-0">
+                                    <i class="bi bi-people me-2"></i>View Members
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Member Form -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="card-header bg-white py-3 border-bottom-0">
+                        <h5 class="mb-0 fw-semibold">Family Member Details</h5>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form method="post" action="{% url 'add_family_member' %}" id="addMemberForm">
+                            {% csrf_token %}
+                            
+                            <div class="row g-4">
+                                <!-- Personal Information Section -->
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-person me-2"></i>Personal Information
+                                    </h6>
+                                </div>
+
+                                <!-- First Name -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control border-2" id="first_name" name="first_name" placeholder="John" required>
+                                        <label for="first_name">
+                                            <i class="bi bi-person me-1"></i>First Name <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control border-2" id="last_name" name="last_name" placeholder="Doe" required>
+                                        <label for="last_name">
+                                            <i class="bi bi-person me-1"></i>Last Name <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Login Credentials Section -->
+                                <div class="col-12 mt-3">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-shield-lock me-2"></i>Login Credentials
+                                    </h6>
+                                </div>
+
+                                <!-- Username -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control border-2" id="username" name="username" placeholder="johndoe" required>
+                                        <label for="username">
+                                            <i class="bi bi-person-badge me-1"></i>Username <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-text text-muted" id="usernameAvailability"></div>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="email" class="form-control border-2" id="email" name="email" placeholder="john@example.com" required>
+                                        <label for="email">
+                                            <i class="bi bi-envelope me-1"></i>Email <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Password -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control border-2" id="password" name="password" placeholder="********" required>
+                                        <label for="password">
+                                            <i class="bi bi-key me-1"></i>Password <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-text text-muted">
+                                        Password must be at least 8 characters
+                                    </div>
+                                </div>
+
+                                <!-- Confirm Password -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control border-2" id="confirm_password" placeholder="********" required>
+                                        <label for="confirm_password">
+                                            <i class="bi bi-key me-1"></i>Confirm Password <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Family Details Section -->
+                                <div class="col-12 mt-3">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-house-heart me-2"></i>Family Details
+                                    </h6>
+                                </div>
+
+                                <!-- Family Code -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control border-2" id="family_code" name="family_code" value="{{ family_code }}" required>
+                                        <label for="family_code">
+                                            <i class="bi bi-qr-code me-1"></i>Family Code <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-text text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Share this code with family members to join
+                                    </div>
+                                </div>
+
+                                <!-- Relation -->
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select border-2" id="relation" name="relation" required>
+                                            <option value="" selected disabled>Select relation...</option>
+                                            {% for relation in relations %}
+                                            <option value="{{ relation }}">{{ relation }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="relation">
+                                            <i class="bi bi-people me-1"></i>Relationship <span class="text-danger">*</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Fill Suggestions -->
+                                <div class="col-12 mt-3">
+                                    <div class="border rounded-3 p-3 bg-light">
+                                        <h6 class="mb-3">
+                                            <i class="bi bi-lightning me-2 text-warning"></i>
+                                            Quick Fill Examples
+                                        </h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fillExample('spouse')">
+                                                <i class="bi bi-heart me-1"></i>Spouse
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fillExample('child')">
+                                                <i class="bi bi-emoji-smile me-1"></i>Child
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fillExample('parent')">
+                                                <i class="bi bi-person-standing me-1"></i>Parent
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fillExample('sibling')">
+                                                <i class="bi bi-people me-1"></i>Sibling
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-gradient-primary px-5 py-3 rounded-pill" id="submitBtn">
+                                        <i class="bi bi-person-plus me-2"></i>Add Family Member
+                                    </button>
+                                    <button type="reset" class="btn btn-outline-secondary px-5 py-3 rounded-pill ms-3">
+                                        <i class="bi bi-x-circle me-2"></i>Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Requirements Card -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 bg-light">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    <i class="bi bi-shield-check text-success me-2"></i>
+                                    What happens after adding?
+                                </h6>
+                                <p class="text-muted mb-0 small">
+                                    The family member will receive their login credentials. They can log in using the username and password you set.
+                                    They'll be able to view and manage expenses based on permissions you grant.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <i class="bi bi-arrow-right-circle fs-1 text-primary opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Style Section -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .btn-gradient-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .form-control.border-2, .form-select.border-2 {
+        border-width: 2px !important;
+        border-color: #e9ecef !important;
+        transition: all 0.3s ease;
+        border-radius: 12px !important;
+    }
+    .form-control.border-2:focus, .form-select.border-2:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        font-weight: 500;
+        transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+    }
+
+    @media (max-width: 768px) {
+        .btn-gradient-primary {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        .btn-outline-secondary {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    // Check username availability
+    document.getElementById('username').addEventListener('blur', function() {
+        const username = this.value;
+        const availabilityDiv = document.getElementById('usernameAvailability');
+        
+        if (username.length < 3) {
+            availabilityDiv.innerHTML = '<span class="text-warning">Username must be at least 3 characters</span>';
+            return;
+        }
+        
+        // Simulate username check (you can replace with actual AJAX call)
+        setTimeout(() => {
+            if (username === 'admin' || username === 'test') {
+                availabilityDiv.innerHTML = '<span class="text-danger">Username not available</span>';
+            } else {
+                availabilityDiv.innerHTML = '<span class="text-success">Username available</span>';
+            }
+        }, 500);
+    });
+
+    // Password confirmation
+    document.getElementById('confirm_password').addEventListener('keyup', function() {
+        const password = document.getElementById('password').value;
+        const confirm = this.value;
+        
+        if (password !== confirm) {
+            this.setCustomValidity('Passwords do not match');
+            this.classList.add('is-invalid');
+        } else {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+        }
+    });
+
+    // Fill example data
+    function fillExample(type) {
+        const examples = {
+            spouse: {
+                first: 'Jane',
+                last: 'Doe',
+                username: 'jane.doe',
+                email: 'jane@example.com',
+                relation: 'Spouse'
+            },
+            child: {
+                first: 'Mike',
+                last: 'Doe',
+                username: 'mike.doe',
+                email: 'mike@example.com',
+                relation: 'Child'
+            },
+            parent: {
+                first: 'Robert',
+                last: 'Doe',
+                username: 'robert.doe',
+                email: 'robert@example.com',
+                relation: 'Parent'
+            },
+            sibling: {
+                first: 'Sarah',
+                last: 'Doe',
+                username: 'sarah.doe',
+                email: 'sarah@example.com',
+                relation: 'Sibling'
+            }
+        };
+        
+        const example = examples[type];
+        if (example) {
+            document.getElementById('first_name').value = example.first;
+            document.getElementById('last_name').value = example.last;
+            document.getElementById('username').value = example.username;
+            document.getElementById('email').value = example.email;
+            document.getElementById('password').value = 'Welcome@123';
+            document.getElementById('confirm_password').value = 'Welcome@123';
+            document.getElementById('relation').value = example.relation;
+            
+            // Highlight filled fields
+            document.querySelectorAll('.form-control').forEach(field => {
+                field.classList.add('bg-success', 'bg-opacity-10');
+                setTimeout(() => field.classList.remove('bg-success', 'bg-opacity-10'), 1000);
+            });
+        }
+    }
+
+    // Form submission validation
+    document.getElementById('addMemberForm').addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm_password').value;
+        
+        if (password !== confirm) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+            return false;
+        }
+        
+        if (password.length < 8) {
+            e.preventDefault();
+            alert('Password must be at least 8 characters long!');
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Adding...';
+        submitBtn.disabled = true;
+    });
+
+    // Auto-hide alerts after 5 seconds
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+</script>
+
+{% endblock %}

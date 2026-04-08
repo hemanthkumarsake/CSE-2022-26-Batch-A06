@@ -1,0 +1,551 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block main %}
+
+<!-- Mobile Toggle for Sidebar -->
+<button class="mobile-toggle d-lg-none" id="mobileToggle">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Collapse Toggle -->
+<button class="sidebar-toggle d-none d-lg-block" id="sidebarToggle" title="Collapse sidebar">
+    <i class="bi bi-chevron-left"></i>
+</button>
+
+<div style="margin-left: 300px;">
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container-fluid px-0 mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center border-0 shadow-sm" role="alert">
+            <i class="bi {% if 'success' in message.tags %}bi-check-circle-fill text-success{% elif 'error' in message.tags %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle text-info{% endif %} me-2 fs-5"></i>
+            <div class="flex-grow-1">{{ message }}</div>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="dashboard-content">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient-primary border-0 rounded-4 overflow-hidden">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="profile-avatar-large me-4">
+                                        {{ user.first_name|first|default:user.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <h3 class="text-white mb-1">{{ user.get_full_name|default:user.username }}</h3>
+                                        <p class="text-white opacity-8 mb-0">
+                                            <i class="bi bi-envelope me-1"></i> {{ user.email }}
+                                        </p>
+                                        <p class="text-white opacity-8 mb-0 mt-1">
+                                            <i class="bi bi-calendar me-1"></i> Member since {{ user.date_joined|date:"F j, Y" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                <span class="badge bg-{{ tier_color }} text-white px-4 py-3 rounded-pill fs-6">
+                                    <i class="bi {{ tier_icon }} me-2"></i>{{ user_tier }} User
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Completion Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0">Profile Completion</h6>
+                            <span class="fw-bold text-primary">{{ profile_completion }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-gradient-primary" role="progressbar" style="width: {{ profile_completion }}%"></div>
+                        </div>
+                        <div class="row mt-3 g-2">
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <i class="bi bi-person {% if user.first_name %}text-success{% else %}text-muted{% endif %}"></i>
+                                    <small class="d-block">Name</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <i class="bi bi-envelope {% if user.email %}text-success{% else %}text-muted{% endif %}"></i>
+                                    <small class="d-block">Email</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <i class="bi bi-tags {% if categories_count > 0 %}text-success{% else %}text-muted{% endif %}"></i>
+                                    <small class="d-block">Categories</small>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-center">
+                                    <i class="bi bi-receipt {% if total_expenses > 0 %}text-success{% else %}text-muted{% endif %}"></i>
+                                    <small class="d-block">Expenses</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                                    <i class="bi bi-receipt fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Total Expenses</h6>
+                                <h4 class="mb-0 fw-bold">{{ total_expenses }}</h4>
+                                <small class="text-muted">All time</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-success bg-opacity-10 text-success rounded-3 p-3">
+                                    <i class="bi bi-currency-rupee fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Total Spent</h6>
+                                <h4 class="mb-0 fw-bold">₹{{ total_spent|floatformat:0 }}</h4>
+                                <small class="text-muted">Lifetime value</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                                    <i class="bi bi-wallet2 fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Active Budgets</h6>
+                                <h4 class="mb-0 fw-bold">{{ active_budgets }}</h4>
+                                <small class="text-muted">Current month</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6">
+                <div class="card stat-card h-100 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="icon-wrapper bg-info bg-opacity-10 text-info rounded-3 p-3">
+                                    <i class="bi bi-credit-card fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1">Subscriptions</h6>
+                                <h4 class="mb-0 fw-bold">{{ active_subscriptions }}</h4>
+                                <small class="text-muted">Active</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Information Tabs -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="card-header bg-white py-3 border-bottom-0">
+                        <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                                    <i class="bi bi-person me-2"></i>Profile Information
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                                    <i class="bi bi-shield-lock me-2"></i>Security
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                                    <i class="bi bi-clock-history me-2"></i>Recent Activity
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="preferences-tab" data-bs-toggle="tab" data-bs-target="#preferences" type="button" role="tab">
+                                    <i class="bi bi-gear me-2"></i>Preferences
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <div class="tab-content" id="profileTabsContent">
+                            <!-- Profile Information Tab -->
+                            <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                                <form method="post" action="{% url 'edit_profile' %}">
+                                    {% csrf_token %}
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">First Name</label>
+                                            <input type="text" class="form-control form-control-lg" name="first_name" value="{{ user.first_name }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">Last Name</label>
+                                            <input type="text" class="form-control form-control-lg" name="last_name" value="{{ user.last_name }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">Username</label>
+                                            <input type="text" class="form-control form-control-lg" value="{{ user.username }}" readonly disabled>
+                                            <small class="text-muted">Username cannot be changed</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">Email Address</label>
+                                            <input type="email" class="form-control form-control-lg" name="email" value="{{ user.email }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">Phone Number (Optional)</label>
+                                            <input type="tel" class="form-control form-control-lg" name="phone" placeholder="+91 98765 43210">
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary px-5">
+                                                <i class="bi bi-check-lg me-2"></i>Save Changes
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Security Tab -->
+                            <div class="tab-pane fade" id="security" role="tabpanel">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="border rounded-3 p-4">
+                                            <h6 class="mb-3">Change Password</h6>
+                                            <form method="post" action="{% url 'change_password' %}">
+                                                {% csrf_token %}
+                                                <div class="mb-3">
+                                                    <label class="form-label small">Current Password</label>
+                                                    <input type="password" class="form-control" name="old_password" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label small">New Password</label>
+                                                    <input type="password" class="form-control" name="new_password1" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label small">Confirm New Password</label>
+                                                    <input type="password" class="form-control" name="new_password2" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-warning">
+                                                    <i class="bi bi-key me-2"></i>Update Password
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="border rounded-3 p-4">
+                                            <h6 class="mb-3 text-danger">Danger Zone</h6>
+                                            <p class="small text-muted mb-3">Once you delete your account, there is no going back. Please be certain.</p>
+                                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                                <i class="bi bi-trash me-2"></i>Delete Account
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="border rounded-3 p-4 mt-3">
+                                            <h6 class="mb-3">Session Information</h6>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span class="text-muted">Last Login:</span>
+                                                <span class="fw-semibold">{{ last_login|date:"d M Y, h:i A" }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <span class="text-muted">Member Since:</span>
+                                                <span class="fw-semibold">{{ date_joined|date:"d M Y" }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Recent Activity Tab -->
+                            <div class="tab-pane fade" id="activity" role="tabpanel">
+                                <h6 class="mb-3">Recent Expenses</h6>
+                                {% if recent_expenses %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Category</th>
+                                                    <th>Description</th>
+                                                    <th class="text-end">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for exp in recent_expenses %}
+                                                <tr>
+                                                    <td>{{ exp.time_stamp|date:"d M Y" }}</td>
+                                                    <td>
+                                                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                                                            {{ exp.category_name|default:"Uncategorized" }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ exp.Buyed_Items|truncatechars:30 }}</td>
+                                                    <td class="text-end fw-bold text-danger">-₹{{ exp.spending_amount|floatformat:2 }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-inbox fs-1 text-muted opacity-25"></i>
+                                        <p class="text-muted mt-2">No recent activity</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Preferences Tab -->
+                            <div class="tab-pane fade" id="preferences" role="tabpanel">
+                                <form method="post" action="{% url 'edit_profile' %}">
+                                    {% csrf_token %}
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">Preferred Currency</label>
+                                            <select class="form-select" name="currency">
+                                                <option value="INR" selected>Indian Rupee (₹)</option>
+                                                <option value="USD">US Dollar ($)</option>
+                                                <option value="EUR">Euro (€)</option>
+                                                <option value="GBP">British Pound (£)</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label text-muted small mb-1">Date Format</label>
+                                            <select class="form-select" name="date_format">
+                                                <option value="d/m/Y">DD/MM/YYYY</option>
+                                                <option value="m/d/Y">MM/DD/YYYY</option>
+                                                <option value="Y-m-d">YYYY-MM-DD</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <h6 class="mb-3">Notifications</h6>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="emailNotifications" name="notification_email" checked>
+                                                <label class="form-check-label" for="emailNotifications">Email Notifications</label>
+                                                <small class="d-block text-muted">Receive budget alerts and insights via email</small>
+                                            </div>
+                                            
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="pushNotifications" name="notification_push" checked>
+                                                <label class="form-check-label" for="pushNotifications">Push Notifications</label>
+                                                <small class="d-block text-muted">Get real-time alerts in your browser</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-lg me-2"></i>Save Preferences
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 py-4">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Delete Account
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'delete_account' %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="mb-3">This action is <strong class="text-danger">permanent</strong> and cannot be undone. All your data including:</p>
+                    <ul class="list-unstyled mb-3">
+                        <li class="mb-2"><i class="bi bi-x-circle text-danger me-2"></i> {{ total_expenses }} expense records</li>
+                        <li class="mb-2"><i class="bi bi-x-circle text-danger me-2"></i> {{ active_budgets }} budget goals</li>
+                        <li class="mb-2"><i class="bi bi-x-circle text-danger me-2"></i> {{ active_subscriptions }} subscriptions</li>
+                        <li class="mb-2"><i class="bi bi-x-circle text-danger me-2"></i> {{ categories_count }} categories</li>
+                    </ul>
+                    <p class="mb-3">Will be permanently deleted.</p>
+                    
+                    <label class="form-label">Type <strong class="text-danger">DELETE</strong> to confirm:</label>
+                    <input type="text" class="form-control" name="confirm_delete" placeholder="DELETE" required>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Permanently Delete Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Style Section -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .profile-avatar-large {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-card {
+        transition: all 0.3s ease;
+        border-radius: 16px !important;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+    }
+
+    .icon-wrapper {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    .icon-wrapper:hover {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .nav-tabs {
+        border-bottom: 1px solid #E2E8F0;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        color: var(--gray);
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border: none;
+        color: var(--primary);
+    }
+    
+    .nav-tabs .nav-link.active {
+        border: none;
+        color: var(--primary);
+        background: none;
+        font-weight: 600;
+        border-bottom: 2px solid var(--primary);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .bg-opacity-10 {
+        --bg-opacity: 0.1;
+    }
+
+    .progress {
+        background-color: #E2E8F0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .profile-avatar-large {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+
+    // Auto-hide alerts after 5 seconds
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+</script>
+
+{% endblock %}

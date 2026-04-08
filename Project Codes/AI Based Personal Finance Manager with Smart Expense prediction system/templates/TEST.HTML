@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAI | Financial Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-light: #E6F0FF;
+            --secondary: #7C3AED;
+            --accent: #00D4AA;
+            --dark: #1E293B;
+            --light: #F8FAFC;
+            --gray: #64748B;
+            --gray-light: #F1F5F9;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --sidebar-width: 240px;
+            --sidebar-collapsed: 70px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            display: flex;
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        /* Professional Sidebar */
+        .sidebar {
+            background: white;
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+            border-right: 1px solid #E2E8F0;
+            transition: var(--transition);
+            box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-header {
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .brand-text {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--dark);
+        }
+
+        .brand-text span {
+            color: var(--primary);
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0.5rem;
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            padding: 0 0.75rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 0.75rem;
+            color: var(--dark);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .nav-link:hover {
+            background: var(--gray-light);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            color: var(--gray);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .nav-link.active .nav-icon {
+            color: var(--primary);
+        }
+
+        .nav-text {
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* User Profile */
+        .user-profile {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 1rem;
+            border-top: 1px solid #E2E8F0;
+            background: white;
+        }
+
+        .profile-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .profile-role {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .top-header {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 99;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .page-title h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .page-title p {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 220px;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: var(--gray-light);
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .notification-btn {
+            background: none;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .notification-btn:hover {
+            background: var(--gray-light);
+            color: var(--primary);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--dark);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            padding: 1.5rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.25rem;
+            border: 1px solid #E2E8F0;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .icon-income { background: var(--primary); }
+        .icon-expense { background: var(--danger); }
+        .icon-savings { background: var(--success); }
+        .icon-budget { background: var(--secondary); }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .trend-up { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .trend-down { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.85rem;
+        }
+
+        /* Charts Section */
+        .charts-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.25rem;
+            border: 1px solid #E2E8F0;
+            height: 100%;
+        }
+
+        .chart-placeholder {
+            height: 250px;
+            background: var(--gray-light);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Transactions */
+        .transactions-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.25rem;
+            border: 1px solid #E2E8F0;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            padding: 0.9rem 0;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.9rem;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .icon-food { background: var(--warning); }
+        .icon-shopping { background: var(--secondary); }
+        .icon-transport { background: var(--primary); }
+        .icon-entertainment { background: #EC4899; }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-title {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .transaction-category {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .transaction-amount {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-left: 1rem;
+        }
+
+        .amount-income { color: var(--success); }
+        .amount-expense { color: var(--danger); }
+
+        .transaction-date {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-left: 1rem;
+        }
+
+        /* AI Insights */
+        .ai-predictions {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid #E2E8F0;
+            margin-top: 1.5rem;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .ai-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .ai-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .prediction-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem;
+            background: var(--gray-light);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .prediction-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .prediction-title {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .prediction-subtitle {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .prediction-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+
+        .prediction-trend {
+            font-size: 0.8rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .mobile-toggle {
+                display: block;
+            }
+            
+            .search-input {
+                width: 180px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-content {
+                padding: 1rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-input {
+                width: 150px;
+            }
+            
+            .header-actions {
+                gap: 0.5rem;
+            }
+            
+            .chart-placeholder {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-actions {
+                display: none;
+            }
+            
+            .mobile-toggle {
+                margin-left: auto;
+            }
+            
+            .top-header {
+                padding: 0.9rem 1rem;
+            }
+            
+            .page-title h1 {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Collapsible Sidebar */
+        .sidebar-collapsed .sidebar {
+            width: var(--sidebar-collapsed);
+        }
+        
+        .sidebar-collapsed .main-content {
+            margin-left: var(--sidebar-collapsed);
+        }
+        
+        .sidebar-collapsed .nav-text,
+        .sidebar-collapsed .brand-text,
+        .sidebar-collapsed .nav-label,
+        .sidebar-collapsed .profile-info,
+        .sidebar-collapsed .nav-badge {
+            display: none;
+        }
+        
+        .sidebar-collapsed .brand-icon {
+            margin-right: 0;
+        }
+        
+        .sidebar-collapsed .nav-link {
+            justify-content: center;
+            padding: 0.7rem;
+        }
+        
+        .sidebar-collapsed .nav-icon {
+            margin-right: 0;
+        }
+        
+        .sidebar-collapsed .profile-content {
+            justify-content: center;
+        }
+        
+        .sidebar-collapsed .profile-avatar {
+            width: 32px;
+            height: 32px;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            padding: 0.4rem;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Professional Sidebar -->
+    {% block nav %}
+    <aside class="sidebar"> 
+        <div class="sidebar-header">
+            <a href="#" class="brand">
+                <div class="brand-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="brand-text">
+                    Fin<span>AI</span>
+                </div>
+            </a>
+            <button class="sidebar-toggle d-none d-lg-block" id="sidebarToggle" title="Collapse sidebar">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <!-- Main Navigation -->
+            <div class="nav-section">
+                <div class="nav-label">Dashboard</div>
+                <div class="nav-item">
+                    <a href="{% url 'dashboard' %}" class="nav-link active" data-page="dashboard">
+                        <div class="nav-icon">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <span class="nav-text">Overview</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'add_expenses' %}" class="nav-link" data-page="expenses">
+                        <div class="nav-icon">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <span class="nav-text">Expenses</span>
+                        <span class="nav-badge">3</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'expenses_report' %}" class="nav-link" data-page="reports">
+                        <div class="nav-icon">
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+                        <span class="nav-text">Reports</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'budget_goals' %}" class="nav-link" data-page="budget">
+                        <div class="nav-icon">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <span class="nav-text">Budget</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="/add_category" class="nav-link" data-page="budget">
+                        <div class="nav-icon">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <span class="nav-text">Category</span>
+                    </a>
+                </div>
+            </div>
+            <!-- Management -->
+            <div class="nav-section">
+                <div class="nav-label">Management</div>
+                <div class="nav-item">
+                    <a href="{% url 'subscription_list' %}" class="nav-link" data-page="subscriptions">
+                        <div class="nav-icon">
+                            <i class="bi bi-credit-card"></i>
+                        </div>
+                        <span class="nav-text">Subscriptions</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link" data-page="profile">
+                        <div class="nav-icon">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <span class="nav-text">Profile</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'user_logout' %}" class="nav-link" data-page="settings">
+                        <div class="nav-icon">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <span class="nav-text">Logout</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- User Profile -->
+        <div class="user-profile">
+            <div class="profile-content">
+                <div class="profile-avatar">
+                    AJ
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">Alex Johnson</div>
+                    <div class="profile-role">Premium User</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+    {% endblock %}
+
+    <!-- Main Content -->
+    {% block main %}
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="mobile-toggle d-lg-none" id="mobileToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="page-title">
+                    <h1>Dashboard Overview</h1>
+                    <p>Welcome back! Here's your financial summary.</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="notification-btn" id="notificationsBtn">
+                    <i class="bi bi-bell"></i>
+                    <span class="notification-badge"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon icon-income">
+                            <i class="bi bi-arrow-down-circle"></i>
+                        </div>
+                        <span class="stat-trend trend-up">
+                            <i class="bi bi-arrow-up"></i> 12.5%
+                        </span>
+                    </div>
+                    <h3 class="stat-value">$4,250</h3>
+                    <p class="stat-label">Monthly Income</p>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon icon-expense">
+                            <i class="bi bi-arrow-up-circle"></i>
+                        </div>
+                        <span class="stat-trend trend-down">
+                            <i class="bi bi-arrow-down"></i> 8.2%
+                        </span>
+                    </div>
+                    <h3 class="stat-value">$2,850</h3>
+                    <p class="stat-label">Monthly Expenses</p>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon icon-savings">
+                            <i class="bi bi-piggy-bank"></i>
+                        </div>
+                        <span class="stat-trend trend-up">
+                            <i class="bi bi-arrow-up"></i> 24.1%
+                        </span>
+                    </div>
+                    <h3 class="stat-value">$1,400</h3>
+                    <p class="stat-label">Monthly Savings</p>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon icon-budget">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <span class="stat-trend trend-up">
+                            <i class="bi bi-arrow-up"></i> 5.3%
+                        </span>
+                    </div>
+                    <h3 class="stat-value">82%</h3>
+                    <p class="stat-label">Budget Utilization</p>
+                </div>
+            </div>
+
+            <!-- Charts and Transactions -->
+            <div class="row g-3">
+                <!-- Expense Chart -->
+                <div class="col-lg-8">
+                    <div class="charts-section">
+                        <div class="section-header">
+                            <h3 class="section-title">Spending Overview</h3>
+                            <select class="form-select form-select-sm w-auto">
+                                <option>Last 30 days</option>
+                                <option>Last 90 days</option>
+                                <option>Last year</option>
+                            </select>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-placeholder">
+                                <div class="text-center">
+                                    <i class="bi bi-bar-chart display-4 text-primary mb-2"></i>
+                                    <p>Expense Chart</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Transactions -->
+                <div class="col-lg-4">
+                    <div class="charts-section">
+                        <div class="section-header">
+                            <h3 class="section-title">Recent Transactions</h3>
+                            <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="transactions-card">
+                            <div class="transaction-item">
+                                <div class="transaction-icon icon-food">
+                                    <i class="bi bi-cup-hot"></i>
+                                </div>
+                                <div class="transaction-details">
+                                    <div class="transaction-title">Starbucks</div>
+                                    <div class="transaction-category">Food & Dining</div>
+                                </div>
+                                <div class="transaction-amount amount-expense">-$5.75</div>
+                            </div>
+                            
+                            <div class="transaction-item">
+                                <div class="transaction-icon icon-shopping">
+                                    <i class="bi bi-bag"></i>
+                                </div>
+                                <div class="transaction-details">
+                                    <div class="transaction-title">Amazon</div>
+                                    <div class="transaction-category">Shopping</div>
+                                </div>
+                                <div class="transaction-amount amount-expense">-$89.99</div>
+                            </div>
+                            
+                            <div class="transaction-item">
+                                <div class="transaction-icon icon-transport">
+                                    <i class="bi bi-fuel-pump"></i>
+                                </div>
+                                <div class="transaction-details">
+                                    <div class="transaction-title">Gas Station</div>
+                                    <div class="transaction-category">Transportation</div>
+                                </div>
+                                <div class="transaction-amount amount-expense">-$45.50</div>
+                            </div>
+                            
+                            <div class="transaction-item">
+                                <div class="transaction-icon icon-entertainment">
+                                    <i class="bi bi-film"></i>
+                                </div>
+                                <div class="transaction-details">
+                                    <div class="transaction-title">Netflix</div>
+                                    <div class="transaction-category">Entertainment</div>
+                                </div>
+                                <div class="transaction-amount amount-expense">-$15.99</div>
+                            </div>
+                            
+                            <div class="transaction-item">
+                                <div class="transaction-icon icon-income">
+                                    <i class="bi bi-bank"></i>
+                                </div>
+                                <div class="transaction-details">
+                                    <div class="transaction-title">Salary Deposit</div>
+                                    <div class="transaction-category">Income</div>
+                                </div>
+                                <div class="transaction-amount amount-income">+$3,500</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Predictions -->
+            <div class="ai-predictions">
+                <div class="ai-header">
+                    <div class="ai-icon">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <h3>AI Financial Insights</h3>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="prediction-item">
+                            <div>
+                                <div class="prediction-title">Next Month's Expenses</div>
+                                <div class="prediction-subtitle">Predicted with 94% accuracy</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="prediction-value">$2,920</div>
+                                <div class="prediction-trend">↓ 2.3%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="prediction-item">
+                            <div>
+                                <div class="prediction-title">Savings Potential</div>
+                                <div class="prediction-subtitle">Based on spending patterns</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="prediction-value">$1,550</div>
+                                <div class="prediction-trend">↑ 18%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="prediction-item">
+                            <div>
+                                <div class="prediction-title">Subscription Alert</div>
+                                <div class="prediction-subtitle">Unused subscriptions detected</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="prediction-value">$45/mo</div>
+                                <div class="prediction-trend text-warning">Save $540/yr</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="prediction-item">
+                            <div>
+                                <div class="prediction-title">Financial Health</div>
+                                <div class="prediction-subtitle">Overall wellness score</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="prediction-value">92/100</div>
+                                <div class="prediction-trend">Top 15%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    {% endblock %}
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Mobile toggle
+        const mobileToggle = document.getElementById('mobileToggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+
+        // Sidebar collapse toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const body = document.body;
+        
+        sidebarToggle.addEventListener('click', function() {
+            body.classList.toggle('sidebar-collapsed');
+            
+            // Change icon based on state
+            const icon = this.querySelector('i');
+            if (body.classList.contains('sidebar-collapsed')) {
+                icon.classList.remove('bi-chevron-left');
+                icon.classList.add('bi-chevron-right');
+            } else {
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-left');
+            }
+        });
+
+        // Navigation click handling
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pageTitle = document.querySelector('.page-title h1');
+        const pageDescription = document.querySelector('.page-title p');
+        
+        // Page content data
+        const pageData = {
+            'dashboard': {
+                title: 'Dashboard Overview',
+                description: 'Welcome back! Here\'s your financial summary.'
+            },
+            'expenses': {
+                title: 'Expense Management',
+                description: 'Track and categorize your expenses.'
+            },
+            'reports': {
+                title: 'Financial Reports',
+                description: 'Detailed reports and analytics.'
+            },
+            'budget': {
+                title: 'Budget Planning',
+                description: 'Set and manage your budgets.'
+            },
+            'predictions': {
+                title: 'AI Predictions',
+                description: 'Future expense forecasts and insights.'
+            },
+            'insights': {
+                title: 'Smart Insights',
+                description: 'Personalized financial recommendations.'
+            },
+            'categories': {
+                title: 'Expense Categories',
+                description: 'Manage your expense categories.'
+            },
+            'subscriptions': {
+                title: 'Subscriptions',
+                description: 'Track recurring payments.'
+            },
+            'profile': {
+                title: 'Profile Settings',
+                description: 'Manage your account information.'
+            },
+            'settings': {
+                title: 'Settings',
+                description: 'Configure your preferences.'
+            }
+        };
+
+        // Notification button
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        notificationsBtn.addEventListener('click', function() {
+            alert('You have 3 new notifications:\n• Budget alert\n• AI insight available\n• Subscription renewal');
+        });
+
+        // Search functionality
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 992 && 
+                !sidebar.contains(e.target) && 
+                !mobileToggle.contains(e.target) &&
+                sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // Animate stat numbers on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const statCards = document.querySelectorAll('.stat-card');
+                    statCards.forEach((card, index) => {
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    });
+                    
+                    // Add initial styles for animation
+                    statCards.forEach(card => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    });
+                    
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        observer.observe(document.querySelector('.stats-grid'));
+    </script>
+</body>
+</html>
