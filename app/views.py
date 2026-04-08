@@ -62,11 +62,8 @@ gradient_boosting_model = None
 def get_model():
     global gradient_boosting_model
     if gradient_boosting_model is None:
-        try:
-            gradient_boosting_model = joblib.load(MODEL_PATH)
-        except:
-            gradient_boosting_model = None
-    return gradient_boosting_model
+        
+        return gradient_boosting_model
 
 
 # ===== PREDICTION VIEW =====
