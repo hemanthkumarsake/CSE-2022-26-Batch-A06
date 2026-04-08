@@ -11,3 +11,4 @@ xgboost==2.0.3
 pytz==2024.1
 requests==2.31.0
 sqlparse==0.4.4
+google-generativeai
