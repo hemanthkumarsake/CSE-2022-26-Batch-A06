@@ -5,7 +5,6 @@ from django.contrib.auth import authenticate, login, logout
 from .models import *
 from .models import GoalTransaction
 from django.contrib.auth.decorators import login_required
-from datetime import datetime
 from django.db.models import Sum, Q, Count
 from .models import SavingsGoal, GoalTransaction
 
@@ -630,7 +629,7 @@ def budget_goals(request):
         
         if month_year and planned_amount:
             # Parse the month input (format: YYYY-MM)
-            month_date = datetime.datetime.strptime(month_year, '%Y-%m').date()
+            month_date = datetime.strptime(month_year, '%Y-%m').date()
             
             # Calculate end of month
             last_day = monthrange(month_date.year, month_date.month)[1]
