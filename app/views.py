@@ -56,27 +56,16 @@ from django.conf import settings
 
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'xgboost_model.pkl')
 
+import gdown
+
 def download_model():
     if not os.path.exists(MODEL_PATH):
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
 
-        url = "https://drive.google.com/uc?export=download&id=1vLjCplSPQibpFKYXf2MnRVs_f-55th3C"
-        response = requests.get(url, stream=True)
-
-        with open(MODEL_PATH, 'wb') as f:
-            for chunk in response.iter_content(1024 * 1024):
-                if chunk:
-                    f.write(chunk)
+        url = "https://drive.google.com/uc?id=1vLjCplSPQibpFKYXf2MnRVs_f-55th3C"
+        gdown.download(url, MODEL_PATH, quiet=False)
 
         print("✅ Model downloaded successfully")
-download_model()
-gradient_boosting_model = None
-
-try:
-    gradient_boosting_model = joblib.load(MODEL_PATH)
-    print("✅ Model loaded successfully")
-except Exception as e:
-    print("❌ Model loading failed:", e)
 @login_required
 def predict_expenses(request):
     now = datetime.now()   # ❌ outside function

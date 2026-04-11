@@ -13,3 +13,4 @@ requests==2.31.0
 sqlparse==0.4.4
 google-generativeai
 openai
+gdown
