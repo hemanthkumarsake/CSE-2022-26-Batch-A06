@@ -66,6 +66,20 @@ def download_model():
         gdown.download(url, MODEL_PATH, quiet=False)
 
         print("✅ Model downloaded successfully")
+# DOWNLOAD MODEL FIRST
+download_model()
+
+# LOAD MODEL
+gradient_boosting_model = None
+
+print("MODEL PATH:", MODEL_PATH)
+print("FILE EXISTS:", os.path.exists(MODEL_PATH))
+
+try:
+    gradient_boosting_model = joblib.load(MODEL_PATH)
+    print("✅ Model loaded successfully")
+except Exception as e:
+    print("❌ Model loading failed:", e)
 @login_required
 def predict_expenses(request):
     now = datetime.now()   # ❌ outside function
