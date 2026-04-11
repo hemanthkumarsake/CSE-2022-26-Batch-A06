@@ -82,7 +82,8 @@ except Exception as e:
     print("❌ Model loading failed:", e)
 @login_required
 def predict_expenses(request):
-    now = datetime.now()   # ❌ outside function
+    global gradient_boosting_model
+    now = datetime.now()   
     if request.method == 'POST':
         # 1. Get all expenses for this user
         all_user_expenses = Addexpenses.objects.filter(user=request.user)
