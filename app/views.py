@@ -1,261 +1,192 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.models import User
-from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
-from .models import *
-from .models import GoalTransaction
-from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Q, Count
-from .models import SavingsGoal, GoalTransaction
-
-
-from django.utils import timezone
-from calendar import monthrange
-import calendar
-from decimal import Decimal
+# ================== PYTHON BUILT-IN ==================
+import os
 import json
-from django.http import JsonResponse
-from collections import defaultdict
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
 import random
-import pytz
 import string
-from django.core.mail import send_mail
-from django.conf import settings
+import calendar
+from datetime import datetime, timedelta
+from collections import defaultdict
+from decimal import Decimal
+
+# ================== THIRD PARTY ==================
 import joblib
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytz
+import requests
+from sklearn.preprocessing import StandardScaler
 
+# ================== DJANGO CORE ==================
 from django.conf import settings
-
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.contrib import messages
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
+from django.core.mail import send_mail
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+
+# ================== DJANGO DB ==================
+from django.db.models import Sum, Q, Count
 from django.db.models.functions import TruncDate
-from sklearn.preprocessing import StandardScaler
-from datetime import datetime
-import requests
+
+# ================== YOUR MODELS ==================
+from .models import *
+from .models import SavingsGoal, GoalTransaction
+
+# ================== ML / UTILS ==================
 from .utils import *
 
 GEMINI_API_KEY = 'your_gemini_api_key_here'
 
+# Create your views here.
 
+
+
+
+# Load the trained ML model once when the server starts
 import os
 import joblib
-import numpy as np
-
+import requests
 from django.conf import settings
-from django.http import JsonResponse
-from django.shortcuts import render 
-from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
 
-# CORRECT MODELS FROM YOUR models.py
-from app.models import Addexpenses, monthly_salary
-# ===== MODEL LOADING (SAFE + LAZY LOADING) =====
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'xgboost_model.pkl')
 
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+
+        url = "https://drive.google.com/uc?export=download&id=1vLjCplSPQibpFKYXf2MnRVs_f-55th3C"
+        response = requests.get(url, stream=True)
+
+        with open(MODEL_PATH, 'wb') as f:
+            for chunk in response.iter_content(1024 * 1024):
+                if chunk:
+                    f.write(chunk)
+
+        print("✅ Model downloaded successfully")
+download_model()
 gradient_boosting_model = None
 
-
-def get_model():
-    global gradient_boosting_model
-    if gradient_boosting_model is None:
-        
-        return gradient_boosting_model
-
-
-# ===== PREDICTION VIEW =====
+try:
+    gradient_boosting_model = joblib.load(MODEL_PATH)
+    print("✅ Model loaded successfully")
+except Exception as e:
+    print("❌ Model loading failed:", e)
 @login_required
 def predict_expenses(request):
-    
+    now = datetime.now()   # ❌ outside function
     if request.method == 'POST':
-        from django.db.models import Sum
-        
-
-# Get salary
-        salary_record = monthly_salary.objects.filter(user=request.user).first()
-        fixed_salary = float(salary_record.salary) if salary_record else 0.0
-
-# Get extra income (current month)
-        now = datetime.now()
-        extra_income = Income.objects.filter(
-            user=request.user,
-            date__month=now.month,
-            date__year=now.year
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        extra_income = float(extra_income)
-
-# ✅ TOTAL INCOME
-        total_income = fixed_salary + extra_income
-        
-
-
-
-
-
-
         # 1. Get all expenses for this user
         all_user_expenses = Addexpenses.objects.filter(user=request.user)
 
-        # 2. AI categories (STRICT ORDER)
+        # 2. The 11 slots the AI was trained to understand (STRICT ORDER)
         ai_categories = [
             'salary', 'rent', 'food', 'entertainment', 'utilities', 
             'transportation', 'insurance', 'savings', 'subscriptions', 
             'travels', 'emi'
         ]
 
+        # Initialize totals for each slot
         data_values = {cat: 0.0 for cat in ai_categories}
 
+        # 3. UPDATED RELEVANCE MAPPING LOGIC
         total_actual_spending = 0
-
         for exp in all_user_expenses:
             amt = float(exp.spending_amount) if exp.spending_amount else 0.0
             total_actual_spending += amt
             name = exp.category_name.lower().strip() if exp.category_name else ""
 
+            # Check for Food relevance
             if any(word in name for word in ['food', 'juice', 'snack', 'grocery', 'drink', 'eat', 'dinner', 'lunch']):
                 data_values['food'] += amt
-
+            
+            # Check for Rent/Stay relevance
             elif any(word in name for word in ['rent', 'room', 'hostel', 'house', 'stay', 'pg']):
                 data_values['rent'] += amt
 
+            # Check for Utilities relevance
             elif any(word in name for word in ['utility', 'water', 'electric', 'bill', 'gas', 'power', 'light']):
                 data_values['utilities'] += amt
 
+            # Check for Transportation
             elif any(word in name for word in ['transport', 'petrol', 'fuel', 'uber', 'ola', 'bus', 'bike', 'car', 'auto']):
                 data_values['transportation'] += amt
 
+            # Check for Subscriptions
             elif any(word in name for word in ['sub', 'mobile', 'recharge', 'netflix', 'wifi', 'internet', 'prime']):
                 data_values['subscriptions'] += amt
 
+            # Check for EMI/Loan
             elif any(word in name for word in ['emi', 'loan', 'installment']):
                 data_values['emi'] += amt
-
+            
+            # NEW CATEGORY MAPPING: Catch 'Dance', 'Gym', 'Class', etc.
             elif any(word in name for word in ['dance', 'class', 'gym', 'hobby', 'entertainment', 'movie']):
                 data_values['entertainment'] += amt
 
+            # CATCH-ALL: Ensure any unique name still contributes to the total prediction
             else:
                 data_values['entertainment'] += amt
 
-        # Salary
-        salary_record = monthly_salary.objects.filter(user=request.user).first()
-        current_salary = float(salary_record.salary) if salary_record else 40000.0
+        # 4. Fetch Salary
+        try:
+            salary_record = monthly_salary.objects.get(user=request.user)
+            fixed_salary = float(salary_record.salary or 0)
+        except:
+            fixed_salary = 0.0
+
+        extra_income = Income.objects.filter(
+            user=request.user,
+            date__month=now.month,
+            date__year=now.year
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        current_salary = fixed_salary + float(extra_income)
         data_values['salary'] = current_salary
 
-        # Prepare input
+        # 5. Prepare the input array
         final_input = [data_values[cat] for cat in ai_categories]
         input_array = np.array([final_input])
 
-        # 🔥 LOAD MODEL SAFELY
-        # 🔥 SIMPLE WORKING LOGIC (FOR EXAM)
-        if total_actual_spending == 0:
-            predicted_expense = current_salary * 0.6
-        else:
-            predicted_expense = total_actual_spending * 1.1  # 10% increase
+        # 6. Generate Prediction with Sensitivity Fix
+        if gradient_boosting_model is None:
+            return JsonResponse({
+                'error': 'Model not loaded'
+            })
 
-        # Sensitivity logic
+        prediction = gradient_boosting_model.predict(input_array)
+        predicted_expense = float(prediction[0])
+
+        # SENSITIVITY LOGIC: If user spends massive amounts (Outliers), 
+        # force the AI to adjust rather than staying "stuck" at the training limit.
         if total_actual_spending > predicted_expense:
+            # Adjust prediction by 20% of the difference to show the model is "learning"
             adjustment = (total_actual_spending - predicted_expense) * 0.20
             predicted_expense += adjustment
 
-        predicted_savings = total_income - predicted_expense
+        total_savings = GoalTransaction.objects.filter(
+            goal__user=request.user
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        predicted_savings = current_salary - predicted_expense - float(total_savings)
 
         return JsonResponse({
             'predicted_expense': round(predicted_expense, 2),
             'predicted_savings': round(predicted_savings, 2)
         })
 
-    # GET request
-    now = datetime.now()
+    # GET request logic
     return render(request, 'predict_expenses.html', {
         'current_month': now.strftime('%b'),
         'current_year': now.year
     })
-@login_required
-def savings_goals(request):
-    today = timezone.localtime(timezone.now()).date()
 
-    # 1. Handle Form Submissions
-    if request.method == 'POST':
-        
-        # Action A: Create a New Goal
-        if 'create_goal' in request.POST:
-            goal_name = request.POST.get('goal_name')
-            target_amount = request.POST.get('target_amount')
-            deadline = request.POST.get('deadline')
-            
-            SavingsGoal.objects.create(
-                user=request.user,
-                goal_name=goal_name,
-                target_amount=target_amount,
-                deadline=deadline
-            )
-            messages.success(request, "New savings goal created!")
-            return redirect('savings_goals')
 
-        # Action B: Add Money to a Goal (Wallet Transaction)
-        elif 'add_money' in request.POST:
-            goal_id = request.POST.get('goal_id')
-            amount = request.POST.get('amount')
-            description = request.POST.get('description', 'Manual Deposit')
-            
-            goal = get_object_or_404(SavingsGoal, id=goal_id, user=request.user)
-            
-            GoalTransaction.objects.create(
-                goal=goal,
-                amount=amount,
-                description=description
-            )
-            messages.success(request, f"₹{amount} added to {goal.goal_name}!")
-            return redirect('savings_goals')
-
-    # 2. Fetch and Calculate Data for UI
-    goals = SavingsGoal.objects.filter(user=request.user).order_by('-created_at')
-    goals_data = []
-
-    for goal in goals:
-        # Sum all transactions for this specific goal
-        saved_amount = goal.transactions.aggregate(Sum('amount'))['amount__sum'] or 0.0
-        saved_amount = float(saved_amount)
-        target = float(goal.target_amount)
-
-        # Progress Math
-        progress = (saved_amount / target) * 100 if target > 0 else 0
-        progress = min(100, max(0, progress)) # Cap at 100% for the UI bar
-        
-        remaining = target - saved_amount
-        if remaining < 0:
-            remaining = 0.0
-
-        # Time Math
-        days_left = (goal.deadline - today).days
-        daily_required = remaining / days_left if days_left > 0 else 0.0
-
-        # Status Logic
-        if saved_amount >= target:
-            status = "Achieved"
-            color = "success"
-        elif days_left <= 0 and remaining > 0:
-            status = "Overdue"
-            color = "danger"
-        else:
-            status = "In Progress"
-            color = "primary"
-
-        goals_data.append({
-            'obj': goal,
-            'saved_amount': round(saved_amount, 2),
-            'progress': round(progress, 1),
-            'remaining': round(remaining, 2),
-            'daily_required': round(daily_required, 2),
-            'days_left': max(0, days_left),
-            'status': status,
-            'color': color
-        })
-
-    return render(request, 'savings_goals.html', {'goals': goals_data})
 
 def register(request):
     # User.objects.all().delete()
@@ -1658,6 +1589,7 @@ from django.contrib import messages
 from .models import SavingsGoal, GoalTransaction
 from django.utils import timezone
 
+
 def savings_goals(request):
     if request.method == "POST":
         if "create_goal" in request.POST:
@@ -1739,9 +1671,7 @@ def update_savings_amount(request, goal_id):
             messages.error(request, "Invalid amount entered.")
             
     return redirect('savings_goals')
-from django.shortcuts import render, redirect
-from django.db.models import Sum
-from django.utils import timezone
+
 from .models import Income, Expense  # Assuming Expense model exists
 from django.contrib import messages
 

@@ -881,7 +881,14 @@
                         <span class="nav-text">Profile</span>
                     </a>
                 </div>
-                
+                <div class="nav-item">
+                    <a href="{% url 'chatbot' %}" class="nav-link {% if request.resolver_match.url_name == 'chatbot' %}active{% endif %}" data-page="chatbot">
+                        <div class="nav-icon">
+                            <i class="bi bi-chat-dots"></i>
+                        </div>
+                        <span class="nav-text">Chatbot</span>
+                    </a>
+                </div>
                         
                     </a>
                 </div>
