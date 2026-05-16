@@ -7,3 +7,4 @@ pytz
 google-genai
 psycopg2-binary
 dj-database-url
+djangorestframework
