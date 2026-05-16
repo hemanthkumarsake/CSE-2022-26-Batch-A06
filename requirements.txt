@@ -9,4 +9,5 @@ xgboost
 joblib
 python-dotenv
 Pillow
+google-generativeai
 google-genai
