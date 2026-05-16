@@ -199,15 +199,31 @@
             </div>
             
             <div style="padding: 2.5rem 1.5rem; text-align: center;">
-                <p style="color: #4b5563; font-size: 1.1rem; margin-bottom: 2rem;">
-                    Our AI model will automatically gather your logged expenses from the database, analyze your spending patterns, and predict your financial outlook for next month.
-                </p>
-                
-                <button id="predictBtn" onclick="fetchPrediction()" class="predict-btn" style="max-width: 400px; margin: 0 auto; display: block;">
-                    🔮 Analyze Database & Predict
-                </button>
-            </div>
-        </div>
+
+    <p style="color: #4b5563; font-size: 1.1rem; margin-bottom: 2rem;">
+        Our AI model will automatically gather your logged expenses from the database, analyze your spending patterns, and predict your financial outlook for next month.
+    </p>
+
+    <div style="
+        background: #fff7ed;
+        border-left: 5px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        color: #92400e;
+        font-weight: 500;
+        line-height: 1.7;
+    ">
+        AI Expense Prediction is temporarily unavailable in the current deployed version because the machine learning model requires higher server storage and compute resources.<br><br>
+
+        The prediction feature can be fully enabled in the online deployment after upgrading to a higher hosting plan with additional paid storage and server resources.
+    </div>
+
+    <button disabled class="predict-btn" style="max-width: 400px; margin: 0 auto; display: block; opacity:0.7; cursor:not-allowed;">
+        🔒 Prediction Temporarily Disabled
+    </button>
+
+</div>
 
         <div id="resultsContainer" style="display: none;">
             <div class="results-section">

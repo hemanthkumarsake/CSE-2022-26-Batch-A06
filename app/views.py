@@ -41,13 +41,16 @@ from .models import SavingsGoal, GoalTransaction
 # ================== ML / UTILS ==================
 from .utils import *
 
-GEMINI_API_KEY = 'your_gemini_api_key_here'
+import os
+import google.generativeai as genai
 
-# Create your views here.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+genai.configure(api_key=GEMINI_API_KEY)
 
 
 
-
+"""
 # Load the trained ML model once when the server starts
 import os
 import joblib
@@ -79,117 +82,22 @@ try:
     gradient_boosting_model = joblib.load(MODEL_PATH)
     print("✅ Model loaded successfully")
 except Exception as e:
-    print("❌ Model loading failed:", e)
+    print("❌ Model loading failed:", e)"""
 @login_required
 def predict_expenses(request):
-    global gradient_boosting_model
-    now = datetime.now()   
-    if request.method == 'POST':
-        # 1. Get all expenses for this user
-        all_user_expenses = Addexpenses.objects.filter(user=request.user)
+    now = datetime.now()
 
-        # 2. The 11 slots the AI was trained to understand (STRICT ORDER)
-        ai_categories = [
-            'salary', 'rent', 'food', 'entertainment', 'utilities', 
-            'transportation', 'insurance', 'savings', 'subscriptions', 
-            'travels', 'emi'
-        ]
+    message = """
+    AI Expense Prediction is temporarily unavailable in the current deployed version because the machine learning model requires higher server storage and compute resources.
 
-        # Initialize totals for each slot
-        data_values = {cat: 0.0 for cat in ai_categories}
+    The prediction feature can be fully enabled in the online deployment after upgrading to a higher hosting plan with additional paid storage and server resources.
+    """
 
-        # 3. UPDATED RELEVANCE MAPPING LOGIC
-        total_actual_spending = 0
-        for exp in all_user_expenses:
-            amt = float(exp.spending_amount) if exp.spending_amount else 0.0
-            total_actual_spending += amt
-            name = exp.category_name.lower().strip() if exp.category_name else ""
-
-            # Check for Food relevance
-            if any(word in name for word in ['food', 'juice', 'snack', 'grocery', 'drink', 'eat', 'dinner', 'lunch']):
-                data_values['food'] += amt
-            
-            # Check for Rent/Stay relevance
-            elif any(word in name for word in ['rent', 'room', 'hostel', 'house', 'stay', 'pg']):
-                data_values['rent'] += amt
-
-            # Check for Utilities relevance
-            elif any(word in name for word in ['utility', 'water', 'electric', 'bill', 'gas', 'power', 'light']):
-                data_values['utilities'] += amt
-
-            # Check for Transportation
-            elif any(word in name for word in ['transport', 'petrol', 'fuel', 'uber', 'ola', 'bus', 'bike', 'car', 'auto']):
-                data_values['transportation'] += amt
-
-            # Check for Subscriptions
-            elif any(word in name for word in ['sub', 'mobile', 'recharge', 'netflix', 'wifi', 'internet', 'prime']):
-                data_values['subscriptions'] += amt
-
-            # Check for EMI/Loan
-            elif any(word in name for word in ['emi', 'loan', 'installment']):
-                data_values['emi'] += amt
-            
-            # NEW CATEGORY MAPPING: Catch 'Dance', 'Gym', 'Class', etc.
-            elif any(word in name for word in ['dance', 'class', 'gym', 'hobby', 'entertainment', 'movie']):
-                data_values['entertainment'] += amt
-
-            # CATCH-ALL: Ensure any unique name still contributes to the total prediction
-            else:
-                data_values['entertainment'] += amt
-
-        # 4. Fetch Salary
-        try:
-            salary_record = monthly_salary.objects.get(user=request.user)
-            fixed_salary = float(salary_record.salary or 0)
-        except:
-            fixed_salary = 0.0
-
-        extra_income = Income.objects.filter(
-            user=request.user,
-            date__month=now.month,
-            date__year=now.year
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        current_salary = fixed_salary + float(extra_income)
-        data_values['salary'] = current_salary
-
-        # 5. Prepare the input array
-        final_input = [data_values[cat] for cat in ai_categories]
-        input_array = np.array([final_input])
-
-        # 6. Generate Prediction with Sensitivity Fix
-        if gradient_boosting_model is None:
-            return JsonResponse({
-                'error': 'Model not loaded'
-            })
-
-        prediction = gradient_boosting_model.predict(input_array)
-        predicted_expense = float(prediction[0])
-
-        # SENSITIVITY LOGIC: If user spends massive amounts (Outliers), 
-        # force the AI to adjust rather than staying "stuck" at the training limit.
-        if total_actual_spending > predicted_expense:
-            # Adjust prediction by 20% of the difference to show the model is "learning"
-            adjustment = (total_actual_spending - predicted_expense) * 0.20
-            predicted_expense += adjustment
-
-        total_savings = GoalTransaction.objects.filter(
-            goal__user=request.user
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        predicted_savings = current_salary - predicted_expense - float(total_savings)
-
-        return JsonResponse({
-            'predicted_expense': round(predicted_expense, 2),
-            'predicted_savings': round(predicted_savings, 2)
-        })
-
-    # GET request logic
     return render(request, 'predict_expenses.html', {
         'current_month': now.strftime('%b'),
-        'current_year': now.year
+        'current_year': now.year,
+        'prediction_message': message
     })
-
 
 
 def register(request):
