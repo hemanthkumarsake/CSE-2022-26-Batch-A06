@@ -40,13 +40,11 @@ from .models import SavingsGoal, GoalTransaction
 from .utils import *
 
 import os
-from google import genai
-from google.genai import types
-from calendar import monthrange
 
+from calendar import monthrange
+import google.generativeai as genai
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-client = None
 
 if GEMINI_API_KEY:
     client = genai.Client(api_key=GEMINI_API_KEY)
