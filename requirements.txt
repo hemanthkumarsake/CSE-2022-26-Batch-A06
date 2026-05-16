@@ -2,7 +2,6 @@ Django
 gunicorn
 whitenoise
 djangorestframework
-google-generativeai
 pandas
 numpy
 scikit-learn
@@ -10,4 +9,4 @@ xgboost
 joblib
 python-dotenv
 Pillow
-google-generativeai
+google-genai
