@@ -1,6 +1,5 @@
 # ================== PYTHON BUILT-IN ==================
 import os
-import json
 import random
 import string
 import calendar
@@ -9,12 +8,11 @@ from collections import defaultdict
 from decimal import Decimal
 
 # ================== THIRD PARTY ==================
-import joblib
-import numpy as np
-import pandas as pd
+
+
 import pytz
 import requests
-from sklearn.preprocessing import StandardScaler
+
 
 # ================== DJANGO CORE ==================
 from django.conf import settings
@@ -42,11 +40,16 @@ from .models import SavingsGoal, GoalTransaction
 from .utils import *
 
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+from calendar import monthrange
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = None
+
+if GEMINI_API_KEY:
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 
@@ -120,7 +123,9 @@ def user_login(request):
             
             try:
                 # Check if the user is added by another person
-                added_by_other = AddFamilyMember.objects.get(Added_person=request.user)
+                added_by_other = AddFamilyMember.objects.filter(
+                    Added_person=user
+                ).first()
             except AddFamilyMember.DoesNotExist:
                 added_by_other = None
 
@@ -139,36 +144,22 @@ def user_login(request):
 
 # views.py (Updated logic segment for dashboard view)
 
-from django.shortcuts import render
+
 from django.db.models import Sum
 from django.utils import timezone
-from datetime import timedelta
-from django.http import JsonResponse
-import json
 
 # Make sure to import your models here, including GoalTransaction
 # from .models import Addexpenses, monthly_salary, BudgetGoalModel, subscriptionModel, GoalTransaction 
 
-from django.shortcuts import render
-from django.db.models import Sum
-from django.utils import timezone
-from datetime import timedelta
+
 from django.http import JsonResponse
-import json
 from .models import Addexpenses, monthly_salary, BudgetGoalModel, subscriptionModel
 
 import json
-from django.shortcuts import render, redirect
-from django.db.models import Sum
-from django.utils import timezone
-from django.http import JsonResponse
-from datetime import timedelta
+
 from .models import Addexpenses, Income, BudgetGoalModel, subscriptionModel # Ensure Income is imported
-import json
-from django.shortcuts import render
 from django.db.models import Sum
 from django.utils import timezone
-from django.http import JsonResponse
 from datetime import timedelta
 from .models import Addexpenses, Income, BudgetGoalModel, subscriptionModel, monthly_salary
 
@@ -485,8 +476,9 @@ def budget_goals(request):
         )
         
         if goal.category:
-            categ = Finanace_Category.objects.get(id=goal.category.id)
-            expenses_query = expenses_query.filter(category_name=goal.category.category)
+            expenses_query = expenses_query.filter(
+                category_name=goal.category.category
+            )
         
         total_spent = expenses_query.aggregate(total=Sum('spending_amount'))['total'] or 0
         
@@ -500,10 +492,6 @@ def budget_goals(request):
         if total_spent > float(goal.planned_amount):
             status = 'exceeded'
             status_color = 'danger'
-            email_subject = 'Budget goal exceeded'
-            category_name = goal.category.category if goal.category else "Overall"
-            email_message = f'Hello {user.username},\n\nFinAI Alert: Your {category_name} budget goal has been exceeded.'
-            send_mail(email_subject, email_message, settings.EMAIL_HOST_USER, [user.email])
         elif progress >= 80:
             status = 'warning'
             status_color = 'warning'
@@ -687,16 +675,15 @@ def expenses_report(request):
             monthly_labels.append(month[:3])
             monthly_data_values.append(monthly_data[month])
     
-    budget_goals = BudgetGoalModel.objects.filter(
-        user=request.user,
-        month__year=today.year
-    ).select_related('category')
+    goals = BudgetGoalModel.objects.filter(
+        user=request.user
+    ).select_related('category').order_by('-month', 'category')
     
     budget_labels = []
     budget_planned = []
     budget_actual = []
     
-    for goal in budget_goals:
+    for goal in goals:
         category_name = goal.category.category if goal.category else 'Overall'
         month_name = goal.month.strftime('%b')
         budget_labels.append(f"{category_name} ({month_name})")
@@ -705,8 +692,7 @@ def expenses_report(request):
         actual = Addexpenses.objects.filter(
             user=request.user,
             category_name=category_name if category_name != 'Overall' else None,
-            time_stamp__date__gte=goal.month,
-            time_stamp__date__lte=goal.end_of_month
+            time_stamp__range=[goal.month, goal.end_of_month]
         ).aggregate(total=Sum('spending_amount'))['total'] or 0
         budget_actual.append(float(actual))
     
@@ -1416,7 +1402,6 @@ def delete_expense(request, pk):
     return redirect('add_expenses') # Change 'expenses' to your actual expense page URL name
 # views.py (Inside your view that handles depositing money into a savings goal)
 
-from django.shortcuts import redirect
 from django.contrib import messages
 from django.db.models import Sum
 from django.utils import timezone
@@ -1464,12 +1449,12 @@ def add_to_savings_goal(request, goal_id):
         GoalTransaction.objects.create(goal=goal, amount=deposit_amount, description=request.POST.get('description', 'Manual Deposit'))
         
         return redirect('savings_goals')
-    from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from .models import SavingsGoal, GoalTransaction
 from django.utils import timezone
 
-
+@login_required
 def savings_goals(request):
     if request.method == "POST":
         if "create_goal" in request.POST:
@@ -1554,7 +1539,7 @@ def update_savings_amount(request, goal_id):
 
 from .models import Income, Expense  # Assuming Expense model exists
 from django.contrib import messages
-
+@login_required
 def add_income(request):
     if request.method == "POST":
         amount = request.POST.get('amount')
