@@ -42,16 +42,14 @@ from .utils import *
 import os
 
 from calendar import monthrange
-from google import genai
+import os
+import google.generativeai as genai
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-client = None
-
 if GEMINI_API_KEY:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
-
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel("gemini-1.5-flash")
 @login_required
 def predict_expenses(request):
     now = datetime.now()
