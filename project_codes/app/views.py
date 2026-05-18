@@ -6,7 +6,9 @@ import calendar
 from datetime import datetime, timedelta
 from collections import defaultdict
 from decimal import Decimal
-
+from django.db.models import Sum
+from datetime import datetime
+from django.utils import timezone
 # ================== THIRD PARTY ==================
 from django.contrib.auth.decorators import login_required
 
@@ -403,7 +405,6 @@ def add_expenses(request):
 
 # ================= BUDGET ALERT CHECK =================
 
-        from django.db.models import Sum
 
         today = timezone.now().date()
 
