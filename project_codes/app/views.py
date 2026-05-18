@@ -488,6 +488,37 @@ def budget_goals(request):
         if total_spent > float(goal.planned_amount):
             status = 'exceeded'
             status_color = 'danger'
+
+    # SEND EMAIL ALERT
+            try:
+                subject = "Budget Limit Exceeded - FinAI"
+
+                message = f"""
+        Hello {request.user.username},
+
+        Your budget goal has been exceeded.
+
+        Category: {goal.category.category if goal.category else 'Overall'}
+        Budget Amount: ₹{goal.planned_amount}
+        Spent Amount: ₹{total_spent}
+
+        Please review your expenses.
+
+        - FinAI Team
+        """
+
+                send_mail(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [request.user.email],
+                    fail_silently=False,
+                )
+
+                print("Budget alert email sent successfully")
+
+            except Exception as e:
+                print("EMAIL ERROR:", e)
         elif progress >= 80:
             status = 'warning'
             status_color = 'warning'

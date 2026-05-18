@@ -136,10 +136,11 @@ EMAIL_PORT = 587  # Replace with your SMTP server port (e.g., 587 for TLS)
 EMAIL_USE_TLS = True  # Set it to True if your SMTP server uses TLS
 EMAIL_USE_SSL = False
 EMAIL_TIMEOUT = 10
-EMAIL_HOST_USER = 'cse.takeoff@gmail.com'  # Replace with your email address
-EMAIL_HOST_PASSWORD = 'digkagfgyxcjltup'
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
