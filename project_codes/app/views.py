@@ -1176,7 +1176,19 @@ def add_family_member(request):
 
             email_subject = 'Welcome to FinAI'
             email_message = f'Hello {username},\n\nWelcome To Our Website!\n\nYour are added on FinAI\n\nHere are your Key details:\nUsername: {username}\nPassword: {password}\nFamily-Code: {family_code}\n\nPlease keep this information safe.\n\nBest regards,\nYour Website Team'
-            send_mail(email_subject, email_message, settings.EMAIL_HOST_USER, [email])
+            from threading import Thread
+            from django.core.mail import send_mail
+
+            def send_email(subject, message, recipient):
+                try:
+                    send_mail(subject, message, settings.EMAIL_HOST_USER, [recipient])
+                except Exception as e:
+                    print("EMAIL ERROR:", e)
+
+            Thread(
+                target=send_email,
+                args=(email_subject, email_message, email)
+            ).start()
             messages.success(request, f'Family member {first_name} {last_name} added successfully!')
             return redirect('family_members_list')
             
