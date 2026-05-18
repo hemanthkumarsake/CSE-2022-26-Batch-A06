@@ -134,13 +134,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/user_login/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Replace with your SMTP server address
-EMAIL_PORT = 587  # Replace with your SMTP server port (e.g., 587 for TLS)
-EMAIL_USE_TLS = True  # Set it to True if your SMTP server uses TLS
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_TIMEOUT = 10
+
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_TIMEOUT = 30
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
