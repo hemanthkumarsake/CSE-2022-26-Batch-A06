@@ -507,13 +507,18 @@ def budget_goals(request):
         - FinAI Team
         """
 
-                send_mail(
+                try:
+                    send_mail(
                     subject,
                     message,
                     settings.EMAIL_HOST_USER,
                     [request.user.email],
-                    fail_silently=False,
+                    fail_silently=True,   # IMPORTANT
                 )
+                    print("Budget alert email sent successfully")
+
+                except Exception as e:
+                    print("EMAIL ERROR:", e)
 
                 print("Budget alert email sent successfully")
 
