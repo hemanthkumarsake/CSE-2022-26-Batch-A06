@@ -514,7 +514,7 @@ def budget_goals(request):
                         message,
                         settings.EMAIL_HOST_USER,
                         [request.user.email],
-                        fail_silently=True,
+                        fail_silently=False,
                     )
 
                     print("Budget alert email sent successfully")
