@@ -489,11 +489,13 @@ def budget_goals(request):
             status = 'exceeded'
             status_color = 'danger'
 
-    # SEND EMAIL ALERT
-            try:
-                subject = "Budget Limit Exceeded - FinAI"
+    # Send only once
+            if not goal.alert_sent:
 
-                message = f"""
+                try:
+                    subject = "Budget Limit Exceeded - FinAI"
+
+                    message = f"""
         Hello {request.user.username},
 
         Your budget goal has been exceeded.
@@ -507,23 +509,22 @@ def budget_goals(request):
         - FinAI Team
         """
 
-                try:
                     send_mail(
-                    subject,
-                    message,
-                    settings.EMAIL_HOST_USER,
-                    [request.user.email],
-                    fail_silently=True,   # IMPORTANT
-                )
+                        subject,
+                        message,
+                        settings.EMAIL_HOST_USER,
+                        [request.user.email],
+                        fail_silently=True,
+                    )
+
                     print("Budget alert email sent successfully")
+
+            # Save alert status
+                    goal.alert_sent = True
+                    goal.save()
 
                 except Exception as e:
                     print("EMAIL ERROR:", e)
-
-                print("Budget alert email sent successfully")
-
-            except Exception as e:
-                print("EMAIL ERROR:", e)
         elif progress >= 80:
             status = 'warning'
             status_color = 'warning'

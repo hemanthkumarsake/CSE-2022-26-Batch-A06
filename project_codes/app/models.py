@@ -59,7 +59,7 @@ class BudgetGoalModel(models.Model):
     end_of_month = models.DateField()
     planned_amount = models.DecimalField(max_digits=12, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    alert_sent = models.BooleanField(default=False)
     class Meta:
         db_table = 'BudgetGoalModel'
 
