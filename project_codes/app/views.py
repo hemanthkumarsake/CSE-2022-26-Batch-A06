@@ -1,6 +1,9 @@
 # ================== PYTHON BUILT-IN ==================
 import os
 import random
+
+from django.db.models import Sum
+from django.utils import timezone
 import string
 import calendar
 from datetime import datetime, timedelta
@@ -145,8 +148,6 @@ def user_login(request):
 # views.py (Updated logic segment for dashboard view)
 
 
-from django.db.models import Sum
-from django.utils import timezone
 
 # Make sure to import your models here, including GoalTransaction
 # from .models import Addexpenses, monthly_salary, BudgetGoalModel, subscriptionModel, GoalTransaction 
