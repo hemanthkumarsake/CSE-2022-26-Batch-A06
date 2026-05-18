@@ -306,7 +306,7 @@
                                            id="plannedAmount" 
                                            name="planned_amount" 
                                            required
-                                           oninput="formatAmount(this)">
+                                           onblur="formatAmount(this)">
                                 </div>
                                 <label for="plannedAmount" class="ms-4">
                                 </label>
@@ -654,11 +654,19 @@
 <script>
     // Format amount input
     function formatAmount(input) {
-        let value = parseFloat(input.value);
-        if (!isNaN(value)) {
-            input.value = value.toFixed(2);
-        }
+    let value = input.value;
+
+    // Remove invalid characters except numbers and dot
+    value = value.replace(/[^0-9.]/g, '');
+
+    // Prevent multiple dots
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts[1];
     }
+
+    input.value = value;
+}
 
     // Set amount from suggestion
     function setAmount(amount) {
