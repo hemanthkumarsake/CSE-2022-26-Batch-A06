@@ -12,7 +12,9 @@ from decimal import Decimal
 
 import pytz
 import requests
-
+from django.core.mail import send_mail
+from django.conf import settings
+from decimal import Decimal
 
 # ================== DJANGO CORE ==================
 from django.conf import settings
@@ -389,7 +391,8 @@ def add_expenses(request):
                 anomaly_flag = True
         # --- END LOGIC ---
         
-        Addexpenses.objects.create(
+        # Save expense
+        new_expense = Addexpenses.objects.create(
             user=request.user,
             category_name=category_name,
             spending_amount=spending_amount,
@@ -397,6 +400,74 @@ def add_expenses(request):
             bill=bill,
             is_anomaly=anomaly_flag
         )
+
+# ================= BUDGET ALERT CHECK =================
+
+        from django.db.models import Sum
+
+        today = timezone.now().date()
+
+# Find matching budget goal
+        goal = BudgetGoalModel.objects.filter(
+            user=request.user,
+            month__year=today.year,
+            month__month=today.month,
+            category__category=category_name
+        ).first()
+
+        if goal:
+
+    # Calculate total spent in this category this month
+            total_spent = Addexpenses.objects.filter(
+                user=request.user,
+                category_name=category_name,
+                time_stamp__year=today.year,
+                time_stamp__month=today.month
+            ).aggregate(total=Sum('spending_amount'))['total'] or 0
+
+    # Check budget exceeded
+            if total_spent > float(goal.planned_amount):
+
+        # Send only once
+                if not goal.alert_sent:
+
+                    try:
+                        subject = "Budget Limit Exceeded - FinAI"
+
+                        message = f"""
+Hello {request.user.username},
+
+Your budget limit has been exceeded.
+
+Category: {category_name}
+
+Budget Amount: ₹{goal.planned_amount}
+
+Current Spending: ₹{total_spent}
+
+Recently Added Expense: ₹{spending_amount}
+
+Please review your expenses.
+
+- FinAI Team
+"""
+
+                        send_mail(
+                            subject,
+                            message,
+                            settings.EMAIL_HOST_USER,
+                            [request.user.email],
+                            fail_silently=False,
+                        )
+
+                        print("Budget alert email sent successfully")
+
+                # Mark alert as sent
+                        goal.alert_sent = True
+                        goal.save()
+
+                    except Exception as e:
+                        print("EMAIL ERROR:", e)
         
         if anomaly_flag:
             messages.warning(request, f"⚠️ Anomaly Detected: This {category_name} expense is unusually high.")
@@ -490,41 +561,7 @@ def budget_goals(request):
             status_color = 'danger'
 
     # Send only once
-            if not goal.alert_sent:
-
-                try:
-                    subject = "Budget Limit Exceeded - FinAI"
-
-                    message = f"""
-        Hello {request.user.username},
-
-        Your budget goal has been exceeded.
-
-        Category: {goal.category.category if goal.category else 'Overall'}
-        Budget Amount: ₹{goal.planned_amount}
-        Spent Amount: ₹{total_spent}
-
-        Please review your expenses.
-
-        - FinAI Team
-        """
-
-                    send_mail(
-                        subject,
-                        message,
-                        settings.EMAIL_HOST_USER,
-                        [request.user.email],
-                        fail_silently=False,
-                    )
-
-                    print("Budget alert email sent successfully")
-
-            # Save alert status
-                    goal.alert_sent = True
-                    goal.save()
-
-                except Exception as e:
-                    print("EMAIL ERROR:", e)
+            
         elif progress >= 80:
             status = 'warning'
             status_color = 'warning'
