@@ -8,7 +8,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 # ================== THIRD PARTY ==================
-
+from django.contrib.auth.decorators import login_required
 
 import pytz
 import requests
@@ -350,7 +350,7 @@ def user_logout(request):
     request.session.flush()
     logout(request)
     return redirect('index')
-
+@login_required
 def add_expenses(request):
     # Get current month and year for accurate filtering
     now = datetime.now()
