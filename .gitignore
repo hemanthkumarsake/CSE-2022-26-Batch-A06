@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .env
+.venv/
+*.ps1
+requirements.txt
