@@ -280,22 +280,19 @@
                             </div>
                         </div>
 
-                        <!-- Month -->
-                        <div class="col-12">
-                            <div class="form-floating">
-                                <select class="form-select border-2" id="monthSelect" name="month" required>
-                                    <option value="" disabled selected>Select a month...</option>
-                                    {% for month in available_months %}
-                                    <option value="{{ month.value }}">{{ month.label }}</option>
-                                    {% endfor %}
-                                </select>
-                                <label for="monthSelect">
-                                    <i class="bi bi-calendar-month me-1"></i>
-                                    Month <span class="text-danger">*</span>
-                                </label>
-                            </div>
-                        </div>
+                      <div class="col-12">
+    <label for="monthSelect" class="form-label fw-semibold">
+        <i class="bi bi-calendar-month me-1"></i>
+        Month <span class="text-danger">*</span>
+    </label>
 
+    <select class="form-select border-2" id="monthSelect" name="month" required>
+
+        {% for month in available_months %}
+        <option value="{{ month.value }}">{{ month.label }}</option>
+        {% endfor %}
+    </select>
+</div>
                         <!-- Planned Amount -->
                         <div class="col-12">
                             <div class="form-floating">

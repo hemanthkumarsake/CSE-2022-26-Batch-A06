@@ -14,6 +14,7 @@ from datetime import datetime
 from django.utils import timezone
 # ================== THIRD PARTY ==================
 from django.contrib.auth.decorators import login_required
+from datetime import date
 
 import pytz
 import requests
@@ -423,7 +424,7 @@ def add_expenses(request):
             total_spent = Addexpenses.objects.filter(
                 user=request.user,
                 category_name=category_name,
-                time_stamp__year=today.year,
+                time_stamp__date__year=today.year,
                 time_stamp__month=today.month
             ).aggregate(total=Sum('spending_amount'))['total'] or 0
 
@@ -584,9 +585,19 @@ def budget_goals(request):
         })
     
     # Get available months for selection (current and next 5 months)
+    from datetime import date
+
     available_months = []
+
+    today = date.today()
+
     for i in range(6):
-        month_date = today.replace(day=1) + timedelta(days=30*i)
+        month = today.month + i
+        year = today.year + (month - 1) // 12
+        month = ((month - 1) % 12) + 1
+
+        month_date = date(year, month, 1)
+
         available_months.append({
             'value': month_date.strftime('%Y-%m'),
             'label': month_date.strftime('%B %Y')
@@ -640,184 +651,310 @@ def edit_budget_goal(request, goal_id):
     
     return redirect('budget_goals')
 
+from datetime import datetime, timedelta, date
+from collections import defaultdict
+import json
+import pytz
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q
+from django.shortcuts import render
+from django.utils import timezone
+
+
 @login_required
 def expenses_report(request):
-    # Set the local timezone for India
-    ist_tz = pytz.timezone('Asia/Kolkata')
-    today = timezone.localtime(timezone.now()).date()
-    
-    filter_type = request.GET.get('filter', 'month')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    category_filter = request.GET.get('category', '')
-    
-    if start_date and end_date:
+    ist_tz = pytz.timezone("Asia/Kolkata")
+    today = timezone.localdate()
+
+    filter_type = request.GET.get("filter", "month")
+    category_filter = request.GET.get("category", "")
+
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+
+    # -----------------------
+    # Determine date range
+    # -----------------------
+    if start_date_str and end_date_str:
         try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        except:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
             start_date = today.replace(day=1)
             end_date = today
     else:
-        if filter_type == 'month':
-            start_date = today.replace(day=1)
-            end_date = today
-        elif filter_type == 'quarter':
-            quarter_month = ((today.month - 1) // 3) * 3 + 1
-            start_date = today.replace(month=quarter_month, day=1)
-            end_date = today
-        elif filter_type == 'year':
-            start_date = today.replace(month=1, day=1)
-            end_date = today
-        else:  # week
+        if filter_type == "week":
             start_date = today - timedelta(days=today.weekday())
             end_date = today
-    
+
+        elif filter_type == "quarter":
+            quarter_month = ((today.month - 1) // 3) * 3 + 1
+            start_date = date(today.year, quarter_month, 1)
+            end_date = today
+
+        elif filter_type == "year":
+            start_date = date(today.year, 1, 1)
+            end_date = date(today.year, 12, 31)
+
+        else:  # month (default)
+            start_date = today.replace(day=1)
+            end_date = today
+
+    # -----------------------
+    # Expenses queryset
+    # -----------------------
     expenses = Addexpenses.objects.filter(
         user=request.user,
-        time_stamp__date__range=[start_date, end_date]
-    ).order_by('-time_stamp')
-    
+        time_stamp__date__range=[start_date, end_date],
+    ).order_by("-time_stamp")
+
     if category_filter:
         expenses = expenses.filter(category_name=category_filter)
-    
-    categories = Finanace_Category.objects.filter(user=request.user).values_list('category', flat=True).distinct()
-    
+
+    categories = (
+        Finanace_Category.objects.filter(user=request.user)
+        .values_list("category", flat=True)
+        .distinct()
+    )
+
     total_expenses = expenses.count()
-    total_amount = expenses.aggregate(total=Sum('spending_amount'))['total'] or 0
-    avg_expense = total_amount / total_expenses if total_expenses > 0 else 0
-    
-    highest_expense = expenses.order_by('-spending_amount').first()
-    lowest_expense = expenses.filter(spending_amount__gt=0).order_by('spending_amount').first()
-    
-    category_data = expenses.values('category_name').annotate(
-        total=Sum('spending_amount'),
-        count=Count('id')
-    ).order_by('-total')
-    
+
+    total_amount = (
+        expenses.aggregate(total=Sum("spending_amount"))["total"] or 0
+    )
+
+    avg_expense = (
+        total_amount / total_expenses if total_expenses else 0
+    )
+
+    highest_expense = expenses.order_by("-spending_amount").first()
+
+    lowest_expense = (
+        expenses.filter(spending_amount__gt=0)
+        .order_by("spending_amount")
+        .first()
+    )
+
+    category_data = (
+        expenses.values("category_name")
+        .annotate(
+            total=Sum("spending_amount"),
+            count=Count("id"),
+        )
+        .order_by("-total")
+    )
+
+    # -----------------------
+    # Category chart
+    # -----------------------
+    colors = [
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FFEEAD",
+        "#D4A5A5",
+        "#9B59B6",
+        "#3498DB",
+        "#E67E22",
+        "#2ECC71",
+        "#F1C40F",
+        "#E74C3C",
+        "#1ABC9C",
+        "#34495E",
+        "#7F8C8D",
+    ]
+
     categories_chart_labels = []
     categories_chart_data = []
     categories_colors = []
-    
-    color_palette = [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
-        '#D4A5A5', '#9B59B6', '#3498DB', '#E67E22', '#2ECC71',
-        '#F1C40F', '#E74C3C', '#1ABC9C', '#34495E', '#7F8C8D'
-    ]
-    
+
     for i, item in enumerate(category_data):
-        categories_chart_labels.append(item['category_name'] or 'Uncategorized')
-        categories_chart_data.append(float(item['total']))
-        categories_colors.append(color_palette[i % len(color_palette)])
-    
-    date_range = (end_date - start_date).days + 1
+        categories_chart_labels.append(
+            item["category_name"] or "Uncategorized"
+        )
+        categories_chart_data.append(float(item["total"]))
+        categories_colors.append(colors[i % len(colors)])
+
+    # -----------------------
+    # Daily trend
+    # -----------------------
     daily_data = defaultdict(float)
-    
+
     for exp in expenses:
-        local_time = exp.time_stamp.astimezone(ist_tz)
-        date_str = local_time.date().strftime('%Y-%m-%d')
-        daily_data[date_str] += float(exp.spending_amount)
-    
+        d = exp.time_stamp.astimezone(ist_tz).date().strftime("%Y-%m-%d")
+        daily_data[d] += float(exp.spending_amount)
+
+    total_days = (end_date - start_date).days + 1
+
     daily_trend_labels = []
     daily_trend_data = []
-    for i in range(date_range):
-        current_date = start_date + timedelta(days=i)
-        date_str = current_date.strftime('%Y-%m-%d')
-        daily_trend_labels.append(current_date.strftime('%d %b'))
-        daily_trend_data.append(float(daily_data.get(date_str, 0)))
-    
+
+    for i in range(total_days):
+        current = start_date + timedelta(days=i)
+        key = current.strftime("%Y-%m-%d")
+        daily_trend_labels.append(current.strftime("%d %b"))
+        daily_trend_data.append(daily_data.get(key, 0))
+
+    # -----------------------
+    # Monthly chart
+    # -----------------------
     monthly_data = defaultdict(float)
+
     year_expenses = Addexpenses.objects.filter(
         user=request.user,
-        time_stamp__year=today.year
+        time_stamp__date__range=[
+            date(today.year, 1, 1),
+            date(today.year, 12, 31),
+        ],
     )
-    
+
     for exp in year_expenses:
-        local_time = exp.time_stamp.astimezone(ist_tz)
-        month_str = local_time.strftime('%B')
-        monthly_data[month_str] += float(exp.spending_amount)
-    
-    months_order = ['January', 'February', 'March', 'April', 'May', 'June', 
-                   'July', 'August', 'September', 'October', 'November', 'December']
-    
+        month_name = exp.time_stamp.astimezone(
+            ist_tz
+        ).strftime("%B")
+        monthly_data[month_name] += float(exp.spending_amount)
+
+    months_order = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ]
+
     monthly_labels = []
-    monthly_data_values = []
-    for month in months_order:
-        if month in monthly_data:
-            monthly_labels.append(month[:3])
-            monthly_data_values.append(monthly_data[month])
-    
-    goals = BudgetGoalModel.objects.filter(
-        user=request.user
-    ).select_related('category').order_by('-month', 'category')
-    
+    monthly_values = []
+
+    for m in months_order:
+        if m in monthly_data:
+            monthly_labels.append(m[:3])
+            monthly_values.append(monthly_data[m])
+
+    # -----------------------
+    # Budget comparison
+    # -----------------------
+    goals = (
+        BudgetGoalModel.objects.filter(user=request.user)
+        .select_related("category")
+        .order_by("-month", "category")
+    )
+
     budget_labels = []
     budget_planned = []
     budget_actual = []
-    
-    for goal in goals:
-        category_name = goal.category.category if goal.category else 'Overall'
-        month_name = goal.month.strftime('%b')
-        budget_labels.append(f"{category_name} ({month_name})")
-        budget_planned.append(float(goal.planned_amount))
-        
-        actual = Addexpenses.objects.filter(
-            user=request.user,
-            category_name=category_name if category_name != 'Overall' else None,
-            time_stamp__range=[goal.month, goal.end_of_month]
-        ).aggregate(total=Sum('spending_amount'))['total'] or 0
-        budget_actual.append(float(actual))
-    
-    top_items = expenses.values('Buyed_Items').annotate(
-        total=Sum('spending_amount'),
-        count=Count('id')
-    ).filter(~Q(Buyed_Items__isnull=True) & ~Q(Buyed_Items='')
-    ).order_by('-total')[:10]
-    
-    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    weekday_data = defaultdict(float)
-    
-    for exp in expenses:
-        local_time = exp.time_stamp.astimezone(ist_tz)
-        weekday = local_time.weekday()
-        weekday_data[weekday] += float(exp.spending_amount)
-    
-    weekday_labels = weekdays
-    weekday_values = [float(weekday_data.get(i, 0)) for i in range(7)]
-    
-    context = {
-        'expenses': expenses[:20],
-        'total_expenses': total_expenses,
-        'total_amount': total_amount,
-        'avg_expense': avg_expense,
-        'highest_expense': highest_expense,
-        'lowest_expense': lowest_expense,
-        'categories': categories,
-        'selected_category': category_filter,
-        'filter_type': filter_type,
-        'start_date': start_date.strftime('%Y-%m-%d'),
-        'end_date': end_date.strftime('%Y-%m-%d'),
-        'date_range_text': f"{start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')}",
-        'categories_chart_labels': json.dumps(categories_chart_labels),
-        'categories_chart_data': json.dumps(categories_chart_data),
-        'categories_colors': json.dumps(categories_colors),
-        'daily_trend_labels': json.dumps(daily_trend_labels),
-        'daily_trend_data': json.dumps(daily_trend_data),
-        'monthly_labels': json.dumps(monthly_labels),
-        'monthly_data': json.dumps(monthly_data_values),
-        'budget_labels': json.dumps(budget_labels),
-        'budget_planned': json.dumps(budget_planned),
-        'budget_actual': json.dumps(budget_actual),
-        'weekday_labels': json.dumps(weekday_labels),
-        'weekday_values': json.dumps(weekday_values),
-        'top_items': top_items,
-        'category_data': category_data,
-        'year': today.year,
-        'month': today.strftime('%B'),
-    }
-    
-    return render(request, 'expenses_report.html', context)
 
+    for goal in goals:
+        category_name = (
+            goal.category.category if goal.category else "Overall"
+        )
+
+        budget_labels.append(
+            f"{category_name} ({goal.month.strftime('%b')})"
+        )
+
+        budget_planned.append(float(goal.planned_amount))
+
+        filters = {
+            "user": request.user,
+            "time_stamp__range": [
+                goal.month,
+                goal.end_of_month,
+            ],
+        }
+
+        if category_name != "Overall":
+            filters["category_name"] = category_name
+
+        actual = (
+            Addexpenses.objects.filter(**filters)
+            .aggregate(total=Sum("spending_amount"))["total"]
+            or 0
+        )
+
+        budget_actual.append(float(actual))
+
+    # -----------------------
+    # Top items
+    # -----------------------
+    top_items = (
+        expenses.values("Buyed_Items")
+        .annotate(
+            total=Sum("spending_amount"),
+            count=Count("id"),
+        )
+        .filter(
+            ~Q(Buyed_Items__isnull=True),
+            ~Q(Buyed_Items=""),
+        )
+        .order_by("-total")[:10]
+    )
+
+    # -----------------------
+    # Weekday chart
+    # -----------------------
+    weekday_names = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
+
+    weekday_data = defaultdict(float)
+
+    for exp in expenses:
+        weekday = exp.time_stamp.astimezone(
+            ist_tz
+        ).weekday()
+        weekday_data[weekday] += float(exp.spending_amount)
+
+    weekday_values = [
+        weekday_data.get(i, 0) for i in range(7)
+    ]
+
+    context = {
+        "expenses": expenses[:20],
+        "total_expenses": total_expenses,
+        "total_amount": total_amount,
+        "avg_expense": avg_expense,
+        "highest_expense": highest_expense,
+        "lowest_expense": lowest_expense,
+        "categories": categories,
+        "selected_category": category_filter,
+        "filter_type": filter_type,
+        "start_date": start_date.strftime("%Y-%m-%d"),
+        "end_date": end_date.strftime("%Y-%m-%d"),
+        "date_range_text": f"{start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')}",
+        "categories_chart_labels": json.dumps(categories_chart_labels),
+        "categories_chart_data": json.dumps(categories_chart_data),
+        "categories_colors": json.dumps(categories_colors),
+        "daily_trend_labels": json.dumps(daily_trend_labels),
+        "daily_trend_data": json.dumps(daily_trend_data),
+        "monthly_labels": json.dumps(monthly_labels),
+        "monthly_data": json.dumps(monthly_values),
+        "budget_labels": json.dumps(budget_labels),
+        "budget_planned": json.dumps(budget_planned),
+        "budget_actual": json.dumps(budget_actual),
+        "weekday_labels": json.dumps(weekday_names),
+        "weekday_values": json.dumps(weekday_values),
+        "top_items": top_items,
+        "category_data": category_data,
+        "year": today.year,
+        "month": today.strftime("%B"),
+    }
+
+    return render(request, "expenses_report.html", context)
 @login_required
 def expense_details(request, expense_id):
     try:
